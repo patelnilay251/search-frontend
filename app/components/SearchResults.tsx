@@ -1,0 +1,195 @@
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { Typography, List, ListItem, Paper, Container, Box, TextField, Button, CircularProgress,Link } from '@mui/material'
+
+// Mock data for preview
+const mockData = {
+  summaryData: "This is a mock summary of the search results. It provides a concise overview of the information found across multiple sources. The summary is designed to be clear, factual, and well-structured, giving users a quick understanding of the topic without the need to read through all individual results.",
+  exaResponse: {
+    results: [
+      { title: "First Search Result", text: "This is the content of the first search result. It contains relevant information about the query.", url: "https://example.com/result1", score: 0.8, publishedDate: "2022-01-01T00:00:00.000Z" },
+      { title: "Second Search Result", text: "Here's the second search result with more details about the topic of interest.", url: "https://example.com/result2", score: 0.7, publishedDate: "2022-01-15T00:00:00.000Z" },
+      { title: "Third Search Result", text: "The third result provides additional context and information related to the search query.", url: "https://example.com/result3", score: 0.9, publishedDate: "2022-02-01T00:00:00.000Z" },
+      { title: "Fourth Search Result", text: "This fourth result offers a different perspective on the topic being researched.", url: "https://example.com/result4", score: 0.6, publishedDate: "2022-03-01T00:00:00.000Z" },
+      { title: "Fifth Search Result", text: "The final result in this list rounds out the information with concluding thoughts.", url: "https://example.com/result5", score: 0.5, publishedDate: "2022-04-01T00:00:00.000Z" }
+    ]
+  }
+}
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { 
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { 
+    y: 0, 
+    opacity: 1,
+    transition: { 
+      type: "spring",
+      stiffness: 100
+    }
+  }
+}
+
+export default function SearchResults() {
+  const [results, setResults] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [summary, setSummary] = useState<string>('')
+  const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const fetchResults = async (query: string) => {
+    setLoading(true)
+    console.log('Searching for:', query)
+
+    try {
+      const response = await fetch('http://localhost:3000/api/search', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setSummary(data.summaryData)
+      setResults(data.exaResponse.results || [])
+      console.log('Summary state:', data.summaryData)
+      console.log('Final results state:', data.exaResponse.results || [])
+    } catch (error) {
+      console.error('Error details:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) return text;
+    return text.substr(0, maxLength) + '...';
+  }
+
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (query.trim()) {
+      fetchResults(query)
+    }
+  }
+
+  if (!mounted) return null
+
+  return (
+    <Container maxWidth="md">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        <Box component="form" onSubmit={handleSearch} sx={{ mt: 4, mb: 4 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Enter your search query"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            sx={{ mr: 2 }}
+          />
+          <Button 
+            type="submit" 
+            variant="contained" 
+            color="primary" 
+            sx={{ mt: 2 }}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Search'}
+          </Button>
+        </Box>
+
+        
+        {summary && (
+          <motion.div variants={itemVariants}>
+            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+              <Typography variant="h4" gutterBottom>Summary</Typography>
+              <Typography variant="body1">{summary}</Typography>
+            </Paper>
+          </motion.div>
+        )}
+        
+
+        {results.length > 0 && (
+          <>
+            <Typography variant="h5" gutterBottom>Search Results</Typography>
+            <List>
+              {results.map((result, index) => (
+                <motion.div key={index} variants={itemVariants}>
+                  <ListItem component={Paper} elevation={2} sx={{ mb: 2, p: 2 }}>
+                    <Box sx={{ width: '100%' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="h6" component="a" href={result.url} target="_blank" 
+                          sx={{ 
+                            color: 'primary.main',
+                            textDecoration: 'none',
+                            '&:hover': {
+                              textDecoration: 'underline'
+                            }
+                          }}>
+                          {result.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Score: {(result.score * 100).toFixed(2)}%
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                        {result.url}
+                      </Typography>
+                      {result.publishedDate && (
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                          Published: {new Date(result.publishedDate).toLocaleDateString()}
+                        </Typography>
+                      )}
+                     <Typography variant="body2" color="text.secondary">
+                        {truncateText(result.text, 150)}
+                        {result.text.length > 150 && (
+                          <Link 
+                            href="#" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              // Implement "Read more" functionality here
+                              console.log("Read more clicked for result:", index);
+                            }}
+                            sx={{ ml: 1 }}
+                          >
+                            Read more
+                          </Link>
+                        )}
+                      </Typography>
+                    </Box>
+                  </ListItem>
+                </motion.div>
+              ))}
+            </List>
+          </>
+        )}
+        
+      </motion.div>
+    </Container>
+  )
+}
