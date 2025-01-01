@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Typography, List, ListItem, Paper, Container, Box, TextField, Button, CircularProgress, Link, Collapse } from '@mui/material'
+import Loader from './Loader'
 
 // Updated mock data with uniform text length
 const mockData = {
@@ -127,18 +128,36 @@ export default function SearchResults() {
           <motion.div variants={itemVariants}>
             <Button 
               type="submit" 
-              variant="contained" 
+              variant="outlined" 
               disabled={loading}
               sx={{
                 width: '100%',
                 height: '50px',
                 fontSize: '0.875rem',
+                color: 'black',
+                backgroundColor: 'white',
+                '&:hover': {
+                  backgroundColor: 'black',
+                  color: 'white',
+                }
               }}
             >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Search'}
+              {loading ? 'Searching...': 'Search'}
             </Button>
           </motion.div>
         </Box>
+
+        <AnimatePresence>
+          {loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Loader/>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <Collapse in={Boolean(summary)} timeout={500}>
           <Paper elevation={0} sx={{ p: 3, mb: 4 }}>
