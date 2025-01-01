@@ -31,20 +31,31 @@ const containerVariants = {
 }
 
 const itemVariants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 0, y: 20 },
   visible: { 
     opacity: 1,
+    y: 0,
     transition: { 
       duration: 0.3
     }
   }
 }
 
-const fadeInVariants = {
-  hidden: { opacity: 0 },
+const contentVariants = {
+  hidden: { opacity: 0, y: -20 },
   visible: { 
     opacity: 1,
-    transition: { duration: 0.5 }
+    y: 0,
+    transition: { 
+      duration: 0.3
+    }
+  },
+  exit: {
+    opacity: 0,
+    y: 20,
+    transition: {
+      duration: 0.2
+    }
   }
 }
 
@@ -54,6 +65,7 @@ export default function SearchResults() {
   const [mounted, setMounted] = useState(false)
   const [summary, setSummary] = useState<string>('')
   const [query, setQuery] = useState('')
+  const [searchKey, setSearchKey] = useState(0)
 
   useEffect(() => {
     setMounted(true)
@@ -61,6 +73,7 @@ export default function SearchResults() {
 
   const fetchResults = async (query: string) => {
     setLoading(true)
+    setSearchKey(prevKey => prevKey + 1)
     console.log('Searching for:', query)
 
     try {
@@ -87,7 +100,7 @@ export default function SearchResults() {
     } finally {
       setLoading(false)
     }
-}
+  }
 
 
   const handleSearch = (e: React.FormEvent) => {
@@ -147,109 +160,111 @@ export default function SearchResults() {
           </motion.div>
         </Box>
 
-        <AnimatePresence>
-          {loading && (
+        <AnimatePresence mode="wait">
+          {loading ? (
             <motion.div
+              key="loader"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <Loader/>
+              <Loader />
             </motion.div>
-          )}
-        </AnimatePresence>
-
-        <Collapse in={Boolean(summary)} timeout={500}>
-          <Paper elevation={0} sx={{ p: 3, mb: 4 }}>
-            <Typography variant="h4" gutterBottom sx={{ fontSize: '1.5rem' }}>
-              Summary
-            </Typography>
-            <Typography variant="body1">{summary}</Typography>
-          </Paper>
-        </Collapse>
-
-        <AnimatePresence>
-          {results.length > 0 && (
+          ) : (
             <motion.div
-              variants={itemVariants}
+              key={`content-${searchKey}`}
+              variants={contentVariants}
               initial="hidden"
               animate="visible"
-              exit="hidden"
+              exit="exit"
             >
-              <Typography variant="h5" gutterBottom sx={{ fontSize: '1.25rem', mb: 3 }}>
-                Search Results
-              </Typography>
-              <List sx={{ gap: 2, display: 'flex', flexDirection: 'column' }}>
-                {results.map((result, index) => (
-                  <motion.div key={index} variants={itemVariants}>
-                    <ListItem component={Paper} elevation={0} sx={{ p: 3 }}>
-                      <Box sx={{ width: '100%' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                          <Typography 
-                            variant="h6" 
-                            component="a" 
-                            href={result.url} 
-                            target="_blank" 
-                            sx={{ 
-                              color: 'primary.main',
-                              textDecoration: 'none',
-                              fontSize: '1rem',
-                              '&:hover': {
-                                textDecoration: 'underline'
-                              }
-                            }}
-                          >
-                            {result.title}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
-                            {(result.score * 100).toFixed(2)}%
-                          </Typography>
-                        </Box>
-                        <Typography 
-                          variant="caption" 
-                          component="div" 
-                          color="text.secondary" 
-                          sx={{ mb: 1, fontSize: '0.75rem' }}
-                        >
-                          {result.url}
-                        </Typography>
-                        {result.publishedDate && (
-                          <Typography 
-                            variant="caption" 
-                            component="div" 
-                            color="text.secondary" 
-                            sx={{ mb: 1, fontSize: '0.75rem' }}
-                          >
-                            {new Date(result.publishedDate).toLocaleDateString()}
-                          </Typography>
-                        )}
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                          {truncateText(result.text, 150)}
-                          {result.text.length > 150 && (
-                            <Link 
-                              href="#" 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                console.log("Read more clicked for result:", index);
-                              }}
-                              sx={{ 
-                                ml: 1,
-                                color: 'primary.main',
-                                textDecoration: 'none',
-                                '&:hover': {
-                                  textDecoration: 'underline'
-                                }
-                              }}
+              {summary && (
+                <Paper elevation={0} sx={{ p: 3, mb: 4 }}>
+                  <Typography variant="h4" gutterBottom sx={{ fontSize: '1.5rem' }}>
+                    Summary
+                  </Typography>
+                  <Typography variant="body1">{summary}</Typography>
+                </Paper>
+              )}
+
+              {results.length > 0 && (
+                <>
+                  <Typography variant="h5" gutterBottom sx={{ fontSize: '1.25rem', mb: 3 }}>
+                    Search Results
+                  </Typography>
+                  <List sx={{ gap: 2, display: 'flex', flexDirection: 'column' }}>
+                    {results.map((result, index) => (
+                      <motion.div key={index} variants={itemVariants}>
+                        <ListItem component={Paper} elevation={0} sx={{ p: 3 }}>
+                          <Box sx={{ width: '100%' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                              <Typography 
+                                variant="h6" 
+                                component="a" 
+                                href={result.url} 
+                                target="_blank" 
+                                sx={{ 
+                                  color: 'primary.main',
+                                  textDecoration: 'none',
+                                  fontSize: '1rem',
+                                  '&:hover': {
+                                    textDecoration: 'underline'
+                                  }
+                                }}
+                              >
+                                {result.title}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+                                {(result.score * 100).toFixed(2)}%
+                              </Typography>
+                            </Box>
+                            <Typography 
+                              variant="caption" 
+                              component="div" 
+                              color="text.secondary" 
+                              sx={{ mb: 1, fontSize: '0.75rem' }}
                             >
-                              Read more
-                            </Link>
-                          )}
-                        </Typography>
-                      </Box>
-                    </ListItem>
-                  </motion.div>
-                ))}
-              </List>
+                              {result.url}
+                            </Typography>
+                            {result.publishedDate && (
+                              <Typography 
+                                variant="caption" 
+                                component="div" 
+                                color="text.secondary" 
+                                sx={{ mb: 1, fontSize: '0.75rem' }}
+                              >
+                                {new Date(result.publishedDate).toLocaleDateString()}
+                              </Typography>
+                            )}
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                              {truncateText(result.text, 150)}
+                              {result.text.length > 150 && (
+                                <Link 
+                                  href="#" 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    console.log("Read more clicked for result:", index);
+                                  }}
+                                  sx={{ 
+                                    ml: 1,
+                                    color: 'primary.main',
+                                    textDecoration: 'none',
+                                    '&:hover': {
+                                      textDecoration: 'underline'
+                                    }
+                                  }}
+                                >
+                                  Read more
+                                </Link>
+                              )}
+                            </Typography>
+                          </Box>
+                        </ListItem>
+                      </motion.div>
+                    ))}
+                  </List>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -257,5 +272,3 @@ export default function SearchResults() {
     </Container>
   )
 }
-
-
