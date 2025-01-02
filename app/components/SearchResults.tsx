@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Typography, List, ListItem, Paper, Container,
           Box, TextField, Button, CircularProgress, Link, 
-          Collapse } 
+          Collapse,IconButton,Tooltip} 
 from '@mui/material'
 import Loader from './Loader'
 import Results from './Results'
+import BarChartIcon from '@mui/icons-material/BarChart'
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -109,6 +111,23 @@ export default function SearchResults() {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
+       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          
+            <IconButton
+              component="a"
+              href="/analytics"
+              aria-label="analytics"
+              sx={{
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                },
+              }}
+            >
+              <BarChartIcon />
+            </IconButton>
+          
+        </Box>
       <motion.div
         initial="hidden"
         animate="visible"
