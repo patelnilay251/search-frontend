@@ -7,6 +7,13 @@ import {Box} from '@mui/material'
 import theme from './theme'
 import Sidebar from './components/SideBar'
 
+const sidebarItems = [
+  { text: 'Home', href: '/' },
+  { text: 'Search', href: '/' },
+  { text: 'History', href: '/history' },
+  { text: 'Settings', href: '/settings' },
+]
+
 export default function RootLayout({
   children,
 }: {
@@ -24,7 +31,7 @@ export default function RootLayout({
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <Box sx={{ display: 'flex' }}>
-            <Sidebar/>
+            <Sidebar items={sidebarItems}/>
             <Box
               component="main"
               sx={{
