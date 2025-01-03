@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Typography, List, ListItem, Paper, Container,
-          Box, TextField, Button, CircularProgress, Link, 
+          Box, TextField, Button, CircularProgress, 
           Collapse,IconButton,Tooltip} 
 from '@mui/material'
 import Loader from './Loader'
 import Results from './Results'
 import BarChartIcon from '@mui/icons-material/BarChart'
-
+import ChatIcon from '@mui/icons-material/Chat'
+import Link from 'next/link'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -198,6 +199,16 @@ export default function SearchResults() {
                           Summary
                         </Typography>
                         <Typography variant="body1">{summary}</Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                          <Link href={`/conversation?summary=${encodeURIComponent(summary)}`} passHref>
+                            <IconButton
+                              aria-label="Continue conversation"
+                              sx={{ color: 'primary.main' }}
+                            >
+                              <ChatIcon/>
+                            </IconButton>
+                          </Link>
+                  </Box>
                       </Box>
               )}
 
