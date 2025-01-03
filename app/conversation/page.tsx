@@ -7,6 +7,6 @@ export default function ConversationPage() {
   const searchParams = useSearchParams()
   const summary = searchParams.get('summary') || 'No summary provided'
 
-  return <ConversationContinuation summary={summary} />
+  return <ConversationContinuation summary={summary}/>
 }
 
