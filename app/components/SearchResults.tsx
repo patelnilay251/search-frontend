@@ -59,6 +59,7 @@ export default function SearchResults() {
   const [summary, setSummary] = useState<string>('')
   const [query, setQuery] = useState('')
   const [searchKey, setSearchKey] = useState(0)
+  const[showConversation, setShowConversation] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -193,28 +194,34 @@ export default function SearchResults() {
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         borderRadius: '4px',
                         p: 3, 
-                        mb: 4 
+                        mb: 4,
+                        position:'relative'
                       }}>
                         <Typography variant="h4" gutterBottom sx={{ fontSize: '1.5rem' }}>
                           Summary
                         </Typography>
                         <Typography variant="body1">{summary}</Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                          <Link href={`/conversation?summary=${encodeURIComponent(summary)}`} passHref>
-                            <IconButton
-                              aria-label="Continue conversation"
-                              sx={{ color: 'primary.main' }}
-                            >
-                              <ChatIcon/>
-                            </IconButton>
-                          </Link>
-                  </Box>
+                        <IconButton
+                       
+                        sx={{
+                          position: 'absolute',
+                          top: '16px',
+                          right: '16px',
+                          color: 'white',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          },
+                        }}
+                      >
+                        <ChatIcon/>
+                      </IconButton>
                       </Box>
               )}
 
               {results.length > 0 && (
                 <Results results={results} sx={{ mt: 4 }} />
               )}
+                
             </motion.div>
           )}
         </AnimatePresence>
