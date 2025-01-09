@@ -15,6 +15,7 @@ import GeminiResults from './GeminiResults'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import ChatIcon from '@mui/icons-material/Chat'
 import QueryConveyor from './QueryConveyor'
+import {WavyBackground} from './ui/wavy-background'
 
 
 const containerVariants = {
@@ -65,9 +66,11 @@ export default function GeminiSearchResults() {
   const [query, setQuery] = useState('')
   const [searchKey, setSearchKey] = useState(0)
   const [showConversation, setShowConversation] = useState(false)
+  const [showConveyor, setShowConveyor] = useState(true)
 
   useEffect(() => {
     setMounted(true)
+    setShowConveyor(true)
   }, [])
 
   const fetchResults = async (query: string) => {
@@ -104,6 +107,7 @@ export default function GeminiSearchResults() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (query.trim()) {
+      setShowConveyor(false)
       fetchResults(query)
     }
   }
@@ -133,6 +137,7 @@ export default function GeminiSearchResults() {
         variants={containerVariants}
       >
         <Box component="form" onSubmit={handleSearch} sx={{ mb: 6 }}>
+          
           <motion.div variants={itemVariants}>
             <TextField
               fullWidth
@@ -163,7 +168,19 @@ export default function GeminiSearchResults() {
               {loading ? 'Searching...' : 'Search'}
             </Button>
           </motion.div>
-          <QueryConveyor width="100%"/>
+          {showConveyor && (
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                width: '100%',
+                mt: 10
+              }}
+            >
+              <QueryConveyor width="100%"/>
+            </Box>
+          )}
         </Box>
 
         <AnimatePresence mode="wait">
@@ -213,7 +230,7 @@ export default function GeminiSearchResults() {
               )}
 
               {results.length > 0 && (
-                <GeminiResults results={results} sx={{ mt: 4 }} />
+                <GeminiResults results={results}/>
               )}
             </motion.div>
           )}
