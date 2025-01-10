@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Typography, Paper, Container, Box, Button, CircularProgress } from '@mui/material'
+import { Typography, Paper, Container, Box, Button} from '@mui/material'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 
@@ -17,16 +17,16 @@ const containerVariants = {
   }
 }
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1,
-    y: 0,
-    transition: { 
-      duration: 0.3
-    }
-  }
-}
+// const itemVariants = {
+//   hidden: { opacity: 0, y: 20 },
+//   visible: { 
+//     opacity: 1,
+//     y: 0,
+//     transition: { 
+//       duration: 0.3
+//     }
+//   }
+// }
 
 const trendData = [
   { name: 'Jan', searches: 4000 },
@@ -44,40 +44,40 @@ const topicData = [
   { name: 'Entertainment', value: 100 },
 ]
 
-const wordCloudData = [
-  { text: 'AI', value: 64 },
-  { text: 'Machine Learning', value: 50 },
-  { text: 'Data Science', value: 40 },
-  { text: 'Neural Networks', value: 30 },
-  { text: 'Deep Learning', value: 25 },
-  { text: 'Big Data', value: 20 },
-  { text: 'Robotics', value: 15 },
-  { text: 'Computer Vision', value: 10 },
-  { text: 'Natural Language Processing', value: 8 },
-  { text: 'Quantum Computing', value: 5 },
-]
+// const wordCloudData = [
+//   { text: 'AI', value: 64 },
+//   { text: 'Machine Learning', value: 50 },
+//   { text: 'Data Science', value: 40 },
+//   { text: 'Neural Networks', value: 30 },
+//   { text: 'Deep Learning', value: 25 },
+//   { text: 'Big Data', value: 20 },
+//   { text: 'Robotics', value: 15 },
+//   { text: 'Computer Vision', value: 10 },
+//   { text: 'Natural Language Processing', value: 8 },
+//   { text: 'Quantum Computing', value: 5 },
+// ]
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 
 export default function AnalyticsDashboard() {
   const [activeChart, setActiveChart] = useState('trends')
-  const [wordCloudReady, setWordCloudReady] = useState(false)
+  
 
-  useEffect(() => {
-    if (activeChart === 'wordcloud') {
-      const timer = setTimeout(() => setWordCloudReady(true), 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [activeChart])
+  // useEffect(() => {
+  //   if (activeChart === 'wordcloud') {
+  //     const timer = setTimeout(() => setWordCloudReady(true), 1000)
+  //     return () => clearTimeout(timer)
+  //   }
+  // }, [activeChart])
 
-  const wordcloudOptions = {
-    rotations: 2,
-    rotationAngles: [-90, 0],
-    fontSizes: [20, 60],
-    fontFamily: 'JetBrains Mono, monospace',
-    colors: COLORS,
-    padding: 2,
-  }
+  // const wordcloudOptions = {
+  //   rotations: 2,
+  //   rotationAngles: [-90, 0],
+  //   fontSizes: [20, 60],
+  //   fontFamily: 'JetBrains Mono, monospace',
+  //   colors: COLORS,
+  //   padding: 2,
+  // }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>

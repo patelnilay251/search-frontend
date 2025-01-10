@@ -15,7 +15,7 @@ import GeminiResults from './GeminiResults'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import ChatIcon from '@mui/icons-material/Chat'
 import QueryConveyor from './QueryConveyor'
-import {WavyBackground} from './ui/wavy-background'
+
 
 
 const containerVariants = {
@@ -58,14 +58,22 @@ const contentVariants = {
   }
 }
 
+interface Result {
+  title: string;
+  text: string;
+  url: string;
+  score: number;
+  publishedDate: string;
+}
+
 export default function GeminiSearchResults() {
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<Result[]>([])
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [summary, setSummary] = useState<string>('')
   const [query, setQuery] = useState('')
   const [searchKey, setSearchKey] = useState(0)
-  const [showConversation, setShowConversation] = useState(false)
+  //const [showConversation, setShowConversation] = useState(false)
   const [showConveyor, setShowConveyor] = useState(true)
 
   useEffect(() => {

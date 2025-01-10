@@ -6,6 +6,7 @@ import CssBaseline from '@mui/material/CssBaseline'
 import {Box} from '@mui/material'
 import theme from './theme'
 import Sidebar from './components/SideBar'
+import {jetbrainsMono} from './font'
 
 const sidebarItems = [
   { text: 'Home', href: '/' },
@@ -20,13 +21,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <head>
+    <html lang="en" className={jetbrainsMono.className}>
+      {/* <head>
         <link
           href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
-      </head>
+      </head> */}
       <body style={{ backgroundColor: '#000000', margin: 0, minHeight: '100vh' }}>
         <ThemeProvider theme={theme}>
           <CssBaseline />

@@ -9,8 +9,6 @@ import {
   TextField, 
   Button, 
   Container,
-  useTheme,
-  useMediaQuery,
   CircularProgress
 } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
@@ -42,8 +40,6 @@ const ContinueChat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [nextId, setNextId] = useState(1)
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const searchParams = useSearchParams()
   const chatBoxRef = useRef<HTMLDivElement>(null)
 
