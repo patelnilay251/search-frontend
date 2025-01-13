@@ -53,7 +53,7 @@ const queryData = [
   { queries: ["Quantum computing basics", "Blockchain technology", "Cybersecurity best practices", "Cloud computing services", "Internet of Things (IoT)"], speed: 25 },
   { queries: ["Renewable energy sources", "Climate change solutions", "Sustainable agriculture", "Electric vehicle technology", "Green building design"], speed: 22 },
   { queries: ["Space exploration news", "Exoplanet discoveries", "Mars colonization plans", "Asteroid mining potential", "Black hole research"], speed: 28 },
-  { queries: ["Genetic engineering ethics", "CRISPR technology", "Stem cell research", "Personalized medicine", "Bioinformatics advancements"], speed: 23 },
+  // { queries: ["Genetic engineering ethics", "CRISPR technology", "Stem cell research", "Personalized medicine", "Bioinformatics advancements"], speed: 23 },
 ]
 
 interface QueryConveyorProps {

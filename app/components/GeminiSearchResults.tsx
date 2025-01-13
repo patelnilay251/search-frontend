@@ -15,6 +15,7 @@ import GeminiResults from './GeminiResults'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import ChatIcon from '@mui/icons-material/Chat'
 import QueryConveyor from './QueryConveyor'
+import WeatherWidget from './ui/WeatherWidget'
 
 
 
@@ -75,10 +76,12 @@ export default function GeminiSearchResults() {
   const [searchKey, setSearchKey] = useState(0)
   //const [showConversation, setShowConversation] = useState(false)
   const [showConveyor, setShowConveyor] = useState(true)
+  const [showWeather, setShowWeather] = useState(true)
 
   useEffect(() => {
     setMounted(true)
     setShowConveyor(true)
+    setShowWeather(true)
   }, [])
 
   const fetchResults = async (query: string) => {
@@ -189,6 +192,19 @@ export default function GeminiSearchResults() {
               <QueryConveyor width="100%"/>
             </Box>
           )}
+          {/* {showWeather && (
+            <Box 
+              sx={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                width: '100%',
+                mt: 10
+              }}
+            >
+              <WeatherWidget/>
+            </Box>
+          )} */}
         </Box>
 
         <AnimatePresence mode="wait">
