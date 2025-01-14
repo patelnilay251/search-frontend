@@ -14,13 +14,16 @@ import {
   AccordionDetails,
   Divider,
 } from '@mui/material'
-import Loader from './Loader'
+import MinimalistLoader from './Loader'
 import GeminiResults from './GeminiResults'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import ChatIcon from '@mui/icons-material/Chat'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import QueryConveyor from './QueryConveyor'
-import WeatherWidget from './ui/WeatherWidget'
+//import WeatherWidget from './ui/WeatherWidget'
+//import { useRouter } from 'next/navigation'
+//import { useConversationStore } from '../store/conversationStore'
+//import { v4 as uuidv4 } from 'uuid'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -92,19 +95,35 @@ export default function GeminiSearchResults() {
   const [query, setQuery] = useState('')
   const [searchKey, setSearchKey] = useState(0)
   const [showConveyor, setShowConveyor] = useState(true)
-  const [showWeather, setShowWeather] = useState(true)
+  //const [showWeather, setShowWeather] = useState(true)
+  const [progress, setProgress] = useState(0)
+  // const { setSummaryDataConversation, setConversationId } = useConversationStore()
+
+  // const router = useRouter()
 
   useEffect(() => {
     setMounted(true)
     setShowConveyor(true)
-    setShowWeather(true)
+    //setShowWeather(true)
   }, [])
 
   const fetchResults = async (query: string) => {
     setLoading(true)
+    setProgress(0)
     setSearchKey(prevKey => prevKey + 1)
 
+
     try {
+      const interval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval)
+            return 100
+          }
+          return prev + 10
+        })
+      }, 300)
+
       const response = await fetch('http://localhost:3000/api/gemini-search', {
         method: 'POST',
         credentials: 'include',
@@ -127,6 +146,7 @@ export default function GeminiSearchResults() {
     } catch (error) {
       console.error('Error details:', error)
     } finally {
+      setProgress(100)
       setLoading(false)
     }
   }
@@ -138,6 +158,16 @@ export default function GeminiSearchResults() {
       fetchResults(query)
     }
   }
+
+  // const handleChatClick = () => {
+  //   if (summaryData) {
+  //     const conversationId = uuidv4()
+  //     setSummaryDataConversation(summaryData)
+  //     setConversationId(conversationId)
+  //     router.push(`/conversation/${conversationId}`)
+  //   }
+  // }
+  
 
   if (!mounted) return null
 
@@ -217,7 +247,7 @@ export default function GeminiSearchResults() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <Loader />
+              <MinimalistLoader progress={progress}/>
             </motion.div>
           ) : (
             <motion.div
@@ -298,6 +328,7 @@ export default function GeminiSearchResults() {
                       Timeframe: {summaryData?.metadata?.timeframe}
                     </Typography>
                     <IconButton
+                      // onClick={handleChatClick}
                       sx={{
                         color: 'white',
                         '&:hover': {

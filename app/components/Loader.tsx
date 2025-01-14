@@ -1,71 +1,71 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Box } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 
-const containerVariants = {
-  start: {
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-  end: {
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
+interface MinimalistLoaderProps {
+  progress: number
 }
 
-const dotVariants = {
-  start: {
-    y: '0%',
-  },
-  end: {
-    y: '100%',
-  },
-}
+const MinimalistLoader: React.FC<MinimalistLoaderProps> = ({ progress }) => {
+  const searchTerms = ['Analyzing', 'Processing', 'Synthesizing', 'Finalizing']
+  const currentTerm = searchTerms[Math.floor((progress / 100) * searchTerms.length)]
 
-const dotTransition = {
-  duration: 0.5,
-  yoyo: Infinity,
-  ease: 'easeInOut',
-}
+  const containerVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 },
+  }
 
-const Loader: React.FC = () => {
+  const progressVariants = {
+    initial: { width: 0 },
+    animate: { width: `${progress}%` },
+  }
+
+  const textVariants = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+  }
+
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100px',
-      }}
+    <motion.div
+      variants={containerVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={{ duration: 0.5 }}
     >
-      <motion.div
-        variants={containerVariants}
-        initial="start"
-        animate="end"
-        style={{
-          display: 'flex',
-          gap: '10px',
-        }}
-      >
-        {[...Array(3)].map((_, index) => (
-          <motion.span
-            key={index}
-            variants={dotVariants}
-            transition={dotTransition}
+      <Box sx={{ width: '100%', maxWidth: 400, margin: '0 auto' }}>
+        <Typography variant="h6" sx={{ mb: 2, textAlign: 'center', color: 'white' }}>
+          {currentTerm}
+        </Typography>
+        <Box sx={{ position: 'relative', height: 4, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 2, overflow: 'hidden' }}>
+          <motion.div
+            variants={progressVariants}
+            initial="initial"
+            animate="animate"
+            transition={{ duration: 0.5, ease: "easeInOut" }}
             style={{
-              width: '10px',
-              height: '10px',
+              position: 'absolute',
+              height: '100%',
               backgroundColor: 'white',
-              display: 'block',
+              borderRadius: 2,
             }}
           />
-        ))}
-      </motion.div>
-    </Box>
+        </Box>
+        <motion.div
+          variants={textVariants}
+          initial="initial"
+          animate="animate"
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          <Typography variant="body2" sx={{ mt: 1, textAlign: 'center', color: 'rgba(255, 255, 255, 0.7)' }}>
+            {`${Math.round(progress)}% Complete`}
+          </Typography>
+        </motion.div>
+      </Box>
+    </motion.div>
   )
 }
 
-export default Loader
+export default MinimalistLoader
 
