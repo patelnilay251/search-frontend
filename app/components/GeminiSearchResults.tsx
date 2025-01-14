@@ -8,16 +8,19 @@ import {
   Box, 
   TextField, 
   Button, 
-  IconButton,  
+  IconButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Divider,
 } from '@mui/material'
 import Loader from './Loader'
 import GeminiResults from './GeminiResults'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import ChatIcon from '@mui/icons-material/Chat'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import QueryConveyor from './QueryConveyor'
 import WeatherWidget from './ui/WeatherWidget'
-
-
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -67,14 +70,27 @@ interface Result {
   publishedDate: string;
 }
 
+interface SummaryData {
+  overview: string;
+  keyFindings: {
+    title: string;
+    description: string;
+  }[];
+  conclusion: string;
+  metadata: {
+    sourcesUsed: number;
+    timeframe: string;
+    queryContext: string;
+  };
+}
+
 export default function GeminiSearchResults() {
   const [results, setResults] = useState<Result[]>([])
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [summary, setSummary] = useState<string>('')
+  const [summaryData, setSummaryData] = useState<SummaryData | null>(null)
   const [query, setQuery] = useState('')
   const [searchKey, setSearchKey] = useState(0)
-  //const [showConversation, setShowConversation] = useState(false)
   const [showConveyor, setShowConveyor] = useState(true)
   const [showWeather, setShowWeather] = useState(true)
 
@@ -87,7 +103,6 @@ export default function GeminiSearchResults() {
   const fetchResults = async (query: string) => {
     setLoading(true)
     setSearchKey(prevKey => prevKey + 1)
-    console.log('Searching for:', query)
 
     try {
       const response = await fetch('http://localhost:3000/api/gemini-search', {
@@ -104,10 +119,11 @@ export default function GeminiSearchResults() {
       }
 
       const data = await response.json()
-      setSummary(data.summaryData)
+      const parsedSummaryData = typeof data.summaryData === 'string' 
+        ? JSON.parse(data.summaryData) 
+        : data.summaryData
+      setSummaryData(parsedSummaryData)
       setResults(data.searchResults || [])
-      console.log('Summary state:', data.summaryData)
-      console.log('Search results:', data.searchResults)
     } catch (error) {
       console.error('Error details:', error)
     } finally {
@@ -148,7 +164,6 @@ export default function GeminiSearchResults() {
         variants={containerVariants}
       >
         <Box component="form" onSubmit={handleSearch} sx={{ mb: 6 }}>
-          
           <motion.div variants={itemVariants}>
             <TextField
               fullWidth
@@ -192,19 +207,6 @@ export default function GeminiSearchResults() {
               <QueryConveyor width="100%"/>
             </Box>
           )}
-          {/* {showWeather && (
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center',
-                width: '100%',
-                mt: 10
-              }}
-            >
-              <WeatherWidget/>
-            </Box>
-          )} */}
         </Box>
 
         <AnimatePresence mode="wait">
@@ -225,7 +227,7 @@ export default function GeminiSearchResults() {
               animate="visible"
               exit="exit"
             >
-              {summary && (
+              {summaryData && (
                 <Box sx={{ 
                   border: '1px solid rgba(255, 255, 255, 0.12)',
                   borderRadius: '4px',
@@ -233,23 +235,79 @@ export default function GeminiSearchResults() {
                   mb: 4,
                   position: 'relative'
                 }}>
-                  <Typography variant="h4" gutterBottom sx={{ fontSize: '1.5rem' }}>
-                    Summary
-                  </Typography>
-                  <Typography variant="body1">{summary}</Typography>
-                  <IconButton
-                    sx={{
-                      position: 'absolute',
-                      top: '16px',
-                      right: '16px',
-                      color: 'white',
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                      },
-                    }}
-                  >
-                    <ChatIcon/>
-                  </IconButton>
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="h4" gutterBottom sx={{ fontSize: '1.5rem' }}>
+                      Overview
+                    </Typography>
+                    <Typography variant="body1">{summaryData.overview}</Typography>
+                  </Box>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="h5" gutterBottom sx={{ fontSize: '1.25rem' }}>
+                      Key Findings
+                    </Typography>
+                    {summaryData?.keyFindings?.map((finding, index) => (
+                      <Accordion 
+                        defaultExpanded
+                        key={index}
+                        sx={{ 
+                          backgroundColor: 'transparent',
+                          '&:before': {
+                            display: 'none',
+                          }
+                        }}
+                      >
+                        <AccordionSummary
+                          expandIcon={<ExpandMoreIcon />}
+                          sx={{ 
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.12)'
+                          }}
+                        >
+                          <Typography>{finding.title}</Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Typography>{finding.description}</Typography>
+                        </AccordionDetails>
+                      </Accordion>
+                    ))}
+                  </Box>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="h5" gutterBottom sx={{ fontSize: '1.25rem' }}>
+                      Conclusion
+                    </Typography>
+                    <Typography variant="body1">{summaryData.conclusion}</Typography>
+                  </Box>
+
+                  <Box sx={{ 
+                    mt: 3, 
+                    pt: 2, 
+                    borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontSize: '0.875rem'
+                  }}>
+                    <Typography variant="caption">
+                      Sources: {summaryData?.metadata?.sourcesUsed} • 
+                      Timeframe: {summaryData?.metadata?.timeframe}
+                    </Typography>
+                    <IconButton
+                      sx={{
+                        color: 'white',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        },
+                      }}
+                    >
+                      <ChatIcon/>
+                    </IconButton>
+                  </Box>
                 </Box>
               )}
 
