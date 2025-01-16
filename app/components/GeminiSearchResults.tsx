@@ -21,7 +21,9 @@ import ChatIcon from '@mui/icons-material/Chat'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import QueryConveyor from './QueryConveyor'
 //import WeatherWidget from './ui/WeatherWidget'
-
+import { useRouter } from 'next/navigation'
+import { useConversationStore } from '../store/conversationStore'
+import { v4 as uuidv4 } from 'uuid'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -96,6 +98,8 @@ export default function GeminiSearchResults() {
   //const [showWeather, setShowWeather] = useState(true)
   const [progress, setProgress] = useState(0)
  
+  const router = useRouter()
+  const { setConversationSummaryData, setConversationId } = useConversationStore()
 
  
   useEffect(() => {
@@ -156,6 +160,14 @@ export default function GeminiSearchResults() {
     }
   }
 
+  const handleChatClick = () => {
+    if (summaryData) {
+      const conversationId = uuidv4()
+      setConversationId(conversationId)
+      setConversationSummaryData(summaryData)
+      router.push(`/conversation/${conversationId}`)
+    }
+  }
 
 
   if (!mounted) return null
@@ -317,7 +329,7 @@ export default function GeminiSearchResults() {
                       Timeframe: {summaryData?.metadata?.timeframe}
                     </Typography>
                     <IconButton
-                     
+                      onClick={handleChatClick}
                       sx={{
                         color: 'white',
                         '&:hover': {
