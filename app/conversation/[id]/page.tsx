@@ -12,11 +12,29 @@ import {
   TextField,
   IconButton,
   Divider,
+  Card,
+  CardContent,
+  Grid,
+  Link,
 } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
 
+// Updated interfaces
+interface Citation {
+  number: number
+  source: string
+  url: string
+}
 
+interface Message {
+  id: string
+  type: 'user' | 'assistant'
+  content: string
+  timestamp: string
+  citations?: Citation[]
+}
 
+// Animation variants remain the same
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -28,14 +46,91 @@ const containerVariants = {
   }
 }
 
+const messageVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.9 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { duration: 0.3 }
+  }
+}
 
+// Message component to handle citations and content
+const MessageContent = ({ message }: { message: Message }) => {
+  return (
+    <CardContent>
+      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+        {message.type === 'user' ? 'You' : 'AI Assistant'}
+      </Typography>
+      <Typography 
+        variant="body1" 
+        component="p" 
+        sx={{ 
+          color: 'white',
+          whiteSpace: 'pre-wrap' // Preserves formatting
+        }}
+      >
+        {message.content}
+      </Typography>
+      
+      {message.citations && message.citations.length > 0 && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle2" color="text.secondary">
+            Sources:
+          </Typography>
+          {message.citations.map((citation) => (
+            <Link
+              key={citation.number}
+              href={citation.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                display: 'block',
+                color: 'rgba(255, 255, 255, 0.7)',
+                textDecoration: 'none',
+                '&:hover': {
+                  color: 'primary.main',
+                  textDecoration: 'underline'
+                }
+              }}
+            >
+              <Typography variant="caption">
+                [{citation.number}] {citation.source}
+              </Typography>
+            </Link>
+          ))}
+        </Box>
+      )}
+      
+      <Typography 
+        variant="caption" 
+        color="text.secondary" 
+        sx={{ mt: 1, display: 'block' }}
+      >
+        {new Date(message.timestamp).toLocaleString()}
+      </Typography>
+    </CardContent>
+  )
+}
 
 export default function ConversationPage() {
   const router = useRouter()
   const params = useParams()
   const { summaryData, conversationId } = useConversationStore()
   const [message, setMessage] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<null | HTMLDivElement>(null)
   const id = params?.id as string
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   useEffect(() => {
     if (!summaryData || !id || conversationId !== id) {
@@ -43,6 +138,61 @@ export default function ConversationPage() {
       return
     }
   }, [summaryData, conversationId, id, router])
+
+  const handleSend = async () => {
+    if (!message.trim()) return
+
+    const newUserMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: message,
+      timestamp: new Date().toISOString()
+    }
+
+    setMessages(prev => [...prev, newUserMessage])
+    setMessage('')
+    setIsLoading(true)
+
+    try {
+      const response = await fetch('http://localhost:3000/api/gemini-search-sub', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message,
+          conversationId: id,
+          summaryData,
+          previousMessages: messages.slice(-3) // Send last 3 messages for context
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
+
+      const data = await response.json()
+      
+      if (data.messages && Array.isArray(data.messages)) {
+        // Filter out any user messages from the API response to prevent duplicates
+        const assistantMessages = data.messages.filter((msg: Message) => msg.type === 'assistant')
+        setMessages(prev => [...prev, ...assistantMessages])
+      }
+    } catch (error) {
+      console.error('Error sending message:', error)
+      // Add error notification here if you want
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
 
   if (!summaryData || !id) {
     return null
@@ -86,7 +236,52 @@ export default function ConversationPage() {
 
           <Divider sx={{ my: 3, backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
 
-
+          <Box sx={{
+            flex: '1 1 auto',
+            overflowY: 'auto',
+            mb: 3,
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '4px',
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 0.3)',
+              },
+            },
+          }}>
+            <Grid container spacing={2}>
+              <AnimatePresence>
+                {messages.map((item) => (
+                  <Grid item xs={12} key={item.id}>
+                    <motion.div
+                      variants={messageVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="hidden"
+                    >
+                      <Card 
+                        elevation={3}
+                        sx={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          backdropFilter: 'blur(5px)',
+                          borderRadius: '10px',
+                        }}
+                      >
+                        <MessageContent message={item} />
+                      </Card>
+                    </motion.div>
+                  </Grid>
+                ))}
+              </AnimatePresence>
+            </Grid>
+            <div ref={messagesEndRef} />
+          </Box>
 
           <Box sx={{
             flex: '0 0 auto',
@@ -100,7 +295,10 @@ export default function ConversationPage() {
               placeholder="Type your message..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-
+              onKeyPress={handleKeyPress}
+              multiline
+              maxRows={4}
+              disabled={isLoading}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   color: 'white',
@@ -123,7 +321,8 @@ export default function ConversationPage() {
               }}
             />
             <IconButton
-
+              onClick={handleSend}
+              disabled={isLoading || !message.trim()}
               sx={{
                 color: 'primary.main',
                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -137,7 +336,6 @@ export default function ConversationPage() {
           </Box>
         </Paper>
       </motion.div>
-
     </Container>
   )
 }
