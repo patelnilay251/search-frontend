@@ -24,6 +24,7 @@ import QueryConveyor from './QueryConveyor'
 import { useRouter } from 'next/navigation'
 import { useConversationStore } from '../store/conversationStore'
 import { v4 as uuidv4 } from 'uuid'
+import { useSearchParams } from 'next/navigation'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -98,6 +99,10 @@ export default function GeminiSearchResults() {
   //const [showWeather, setShowWeather] = useState(true)
   const [progress, setProgress] = useState(0)
  
+  const [initialRender, setInitialRender] = useState(true)
+
+  const searchParams = useSearchParams()
+
   const router = useRouter()
   const { setConversationSummaryData, setConversationId } = useConversationStore()
 

@@ -19,7 +19,6 @@ import {
 } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
 
-// Updated interfaces
 interface Citation {
   number: number
   source: string
@@ -30,11 +29,10 @@ interface Message {
   id: string
   type: 'user' | 'assistant'
   content: string
-  timestamp: string
   citations?: Citation[]
+  timestamp: string
 }
 
-// Animation variants remain the same
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -56,8 +54,16 @@ const messageVariants = {
   }
 }
 
-// Message component to handle citations and content
 const MessageContent = ({ message }: { message: Message }) => {
+  const extractCitations = (content: string) => {
+    return [...new Set(content.match(/\[\d+\]/g))].map(c => Number(c.replace(/[\[\]]/g, '')));
+  };
+
+  const citationNumbers = extractCitations(message.content);
+  const validCitations = message.citations?.filter(c => 
+    citationNumbers.includes(c.number)
+  ) || [];
+
   return (
     <CardContent>
       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -65,40 +71,62 @@ const MessageContent = ({ message }: { message: Message }) => {
       </Typography>
       <Typography 
         variant="body1" 
-        component="p" 
+        component="div"
         sx={{ 
           color: 'white',
-          whiteSpace: 'pre-wrap' // Preserves formatting
+          whiteSpace: 'pre-wrap',
+          '& a': {
+            color: 'primary.main',
+            textDecoration: 'none',
+            '&:hover': {
+              textDecoration: 'underline'
+            }
+          }
         }}
       >
-        {message.content}
+        {message.content.split(/(\[\d+\])/g).map((part, i) => {
+          if (part.match(/^\[\d+\]$/)) {
+            const num = parseInt(part.replace(/[\[\]]/g, ''));
+            const citation = validCitations.find(c => c.number === num);
+            return citation ? (
+              <Link 
+                key={i} 
+                href={citation.url} 
+                target="_blank"
+                rel="noopener"
+                sx={{ cursor: 'pointer' }}
+              >
+                {part}
+              </Link>
+            ) : part;
+          }
+          return part;
+        })}
       </Typography>
       
-      {message.citations && message.citations.length > 0 && (
+      {validCitations.length > 0 && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="subtitle2" color="text.secondary">
             Sources:
           </Typography>
-          {message.citations.map((citation) => (
-            <Link
-              key={citation.number}
-              href={citation.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                display: 'block',
-                color: 'rgba(255, 255, 255, 0.7)',
-                textDecoration: 'none',
-                '&:hover': {
-                  color: 'primary.main',
-                  textDecoration: 'underline'
-                }
-              }}
-            >
-              <Typography variant="caption">
-                [{citation.number}] {citation.source}
+          {validCitations.map((citation) => (
+            <Box key={citation.number} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                [{citation.number}] 
               </Typography>
-            </Link>
+              <Link
+                href={citation.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontSize: '0.8rem',
+                  '&:hover': { color: 'primary.main' }
+                }}
+              >
+                {citation.source}
+              </Link>
+            </Box>
           ))}
         </Box>
       )}
@@ -135,7 +163,6 @@ export default function ConversationPage() {
   useEffect(() => {
     if (!summaryData || !id || conversationId !== id) {
       router.replace('/')
-      return
     }
   }, [summaryData, conversationId, id, router])
 
@@ -157,31 +184,29 @@ export default function ConversationPage() {
       const response = await fetch('http://localhost:3000/api/gemini-search-sub', {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message,
           conversationId: id,
           summaryData,
-          previousMessages: messages.slice(-3) // Send last 3 messages for context
+          previousMessages: messages.slice(-3)
         }),
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to send message')
-      }
-
-      const data = await response.json()
+      if (!response.ok) throw new Error('Failed to send message')
       
-      if (data.messages && Array.isArray(data.messages)) {
-        // Filter out any user messages from the API response to prevent duplicates
-        const assistantMessages = data.messages.filter((msg: Message) => msg.type === 'assistant')
-        setMessages(prev => [...prev, ...assistantMessages])
+      const data = await response.json()
+      if (data.messages?.length) {
+        setMessages(prev => [...prev, ...data.messages.map((msg: any) => ({
+          ...msg,
+          citations: msg.citations?.map((c: any) => ({
+            ...c,
+            url: c.url.startsWith('http') ? c.url : `https://${c.url}`
+          }))
+        }))])
       }
     } catch (error) {
-      console.error('Error sending message:', error)
-      // Add error notification here if you want
+      console.error('Error:', error)
     } finally {
       setIsLoading(false)
     }
@@ -194,37 +219,12 @@ export default function ConversationPage() {
     }
   }
 
-  if (!summaryData || !id) {
-    return null
-  }
+  if (!summaryData || !id) return null
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{
-        py: 4,
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        style={{ height: '100%' }}
-      >
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-        >
+    <Container maxWidth="lg" sx={{ py: 4, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ height: '100%' }}>
+        <Paper elevation={3} sx={{ p: 4, height: '100%', bgcolor: 'rgba(0, 0, 0, 0.8)', display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ flex: '0 0 auto' }}>
             <Typography variant="h4" component="h1" gutterBottom sx={{ color: 'white' }}>
               Conversation Summary
@@ -234,45 +234,15 @@ export default function ConversationPage() {
             </Typography>
           </Box>
 
-          <Divider sx={{ my: 3, backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+          <Divider sx={{ my: 3, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
 
-          <Box sx={{
-            flex: '1 1 auto',
-            overflowY: 'auto',
-            mb: 3,
-            '&::-webkit-scrollbar': {
-              width: '8px',
-            },
-            '&::-webkit-scrollbar-track': {
-              background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '4px',
-              '&:hover': {
-                background: 'rgba(255, 255, 255, 0.3)',
-              },
-            },
-          }}>
+          <Box sx={{ flex: 1, overflowY: 'auto', mb: 3, scrollBehavior: 'smooth' }}>
             <Grid container spacing={2}>
               <AnimatePresence>
                 {messages.map((item) => (
                   <Grid item xs={12} key={item.id}>
-                    <motion.div
-                      variants={messageVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="hidden"
-                    >
-                      <Card 
-                        elevation={3}
-                        sx={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          backdropFilter: 'blur(5px)',
-                          borderRadius: '10px',
-                        }}
-                      >
+                    <motion.div variants={messageVariants}>
+                      <Card elevation={3} sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(5px)' }}>
                         <MessageContent message={item} />
                       </Card>
                     </motion.div>
@@ -283,12 +253,7 @@ export default function ConversationPage() {
             <div ref={messagesEndRef} />
           </Box>
 
-          <Box sx={{
-            flex: '0 0 auto',
-            display: 'flex',
-            gap: 2,
-            alignItems: 'center'
-          }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <TextField
               fullWidth
               variant="outlined"
@@ -302,34 +267,19 @@ export default function ConversationPage() {
               sx={{
                 '& .MuiOutlinedInput-root': {
                   color: 'white',
-                  '& fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.23)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
-                  },
+                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
+                  '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
                 },
                 '& .MuiOutlinedInput-input': {
-                  '&::placeholder': {
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    opacity: 1,
-                  },
+                  '&::placeholder': { color: 'rgba(255, 255, 255, 0.5)' },
                 },
               }}
             />
             <IconButton
               onClick={handleSend}
               disabled={isLoading || !message.trim()}
-              sx={{
-                color: 'primary.main',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                }
-              }}
+              sx={{ color: 'primary.main', bgcolor: 'rgba(255, 255, 255, 0.1)', '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' } }}
             >
               <SendIcon />
             </IconButton>
