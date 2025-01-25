@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Typography, 
+import {
+  Typography,
   Container,
-  Box, 
-  TextField, 
-  Button, 
+  Box,
+  TextField,
+  Button,
   IconButton,
   Accordion,
   AccordionSummary,
@@ -24,13 +24,13 @@ import QueryConveyor from './QueryConveyor'
 import { useRouter } from 'next/navigation'
 import { useConversationStore } from '../store/conversationStore'
 import { v4 as uuidv4 } from 'uuid'
-import { useSearchParams } from 'next/navigation'
+//import { useSearchParams } from 'next/navigation'
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: { 
+  visible: {
     opacity: 1,
-    transition: { 
+    transition: {
       staggerChildren: 0.1,
       duration: 0.5
     }
@@ -39,10 +39,10 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
+  visible: {
     opacity: 1,
     y: 0,
-    transition: { 
+    transition: {
       duration: 0.3
     }
   }
@@ -50,10 +50,10 @@ const itemVariants = {
 
 const contentVariants = {
   hidden: { opacity: 0, y: -20 },
-  visible: { 
+  visible: {
     opacity: 1,
     y: 0,
-    transition: { 
+    transition: {
       duration: 0.3
     }
   },
@@ -98,15 +98,15 @@ export default function GeminiSearchResults() {
   const [showConveyor, setShowConveyor] = useState(true)
   //const [showWeather, setShowWeather] = useState(true)
   const [progress, setProgress] = useState(0)
- 
-  const [initialRender, setInitialRender] = useState(true)
 
-  const searchParams = useSearchParams()
+  //const [initialRender, setInitialRender] = useState(true)
+
+  //const searchParams = useSearchParams()
 
   const router = useRouter()
   const { setConversationSummaryData, setConversationId } = useConversationStore()
 
- 
+
   useEffect(() => {
     setMounted(true)
     setShowConveyor(true)
@@ -133,7 +133,7 @@ export default function GeminiSearchResults() {
       const response = await fetch('http://localhost:3000/api/gemini-search', {
         method: 'POST',
         credentials: 'include',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query }),
@@ -144,8 +144,8 @@ export default function GeminiSearchResults() {
       }
 
       const data = await response.json()
-      const parsedSummaryData = typeof data.summaryData === 'string' 
-        ? JSON.parse(data.summaryData) 
+      const parsedSummaryData = typeof data.summaryData === 'string'
+        ? JSON.parse(data.summaryData)
         : data.summaryData
       setSummaryData(parsedSummaryData)
       setResults(data.searchResults || [])
@@ -211,9 +211,9 @@ export default function GeminiSearchResults() {
             />
           </motion.div>
           <motion.div variants={itemVariants}>
-            <Button 
-              type="submit" 
-              variant="outlined" 
+            <Button
+              type="submit"
+              variant="outlined"
               disabled={loading}
               sx={{
                 width: '100%',
@@ -231,16 +231,16 @@ export default function GeminiSearchResults() {
             </Button>
           </motion.div>
           {showConveyor && (
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
                 alignItems: 'center',
                 width: '100%',
                 mt: 10
               }}
             >
-              <QueryConveyor width="100%"/>
+              <QueryConveyor width="100%" />
             </Box>
           )}
         </Box>
@@ -253,7 +253,7 @@ export default function GeminiSearchResults() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <MinimalistLoader progress={progress}/>
+              <MinimalistLoader progress={progress} />
             </motion.div>
           ) : (
             <motion.div
@@ -264,10 +264,10 @@ export default function GeminiSearchResults() {
               exit="exit"
             >
               {summaryData && (
-                <Box sx={{ 
+                <Box sx={{
                   border: '1px solid rgba(255, 255, 255, 0.12)',
                   borderRadius: '4px',
-                  p: 3, 
+                  p: 3,
                   mb: 4,
                   position: 'relative'
                 }}>
@@ -285,10 +285,10 @@ export default function GeminiSearchResults() {
                       Key Findings
                     </Typography>
                     {summaryData?.keyFindings?.map((finding, index) => (
-                      <Accordion 
+                      <Accordion
                         defaultExpanded
                         key={index}
-                        sx={{ 
+                        sx={{
                           backgroundColor: 'transparent',
                           '&:before': {
                             display: 'none',
@@ -297,7 +297,7 @@ export default function GeminiSearchResults() {
                       >
                         <AccordionSummary
                           expandIcon={<ExpandMoreIcon />}
-                          sx={{ 
+                          sx={{
                             borderBottom: '1px solid rgba(255, 255, 255, 0.12)'
                           }}
                         >
@@ -319,9 +319,9 @@ export default function GeminiSearchResults() {
                     <Typography variant="body1">{summaryData.conclusion}</Typography>
                   </Box>
 
-                  <Box sx={{ 
-                    mt: 3, 
-                    pt: 2, 
+                  <Box sx={{
+                    mt: 3,
+                    pt: 2,
                     borderTop: '1px solid rgba(255, 255, 255, 0.12)',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -330,7 +330,7 @@ export default function GeminiSearchResults() {
                     fontSize: '0.875rem'
                   }}>
                     <Typography variant="caption">
-                      Sources: {summaryData?.metadata?.sourcesUsed} • 
+                      Sources: {summaryData?.metadata?.sourcesUsed} •
                       Timeframe: {summaryData?.metadata?.timeframe}
                     </Typography>
                     <IconButton
@@ -342,14 +342,14 @@ export default function GeminiSearchResults() {
                         },
                       }}
                     >
-                      <ChatIcon/>
+                      <ChatIcon />
                     </IconButton>
                   </Box>
                 </Box>
               )}
 
               {results.length > 0 && (
-                <GeminiResults results={results}/>
+                <GeminiResults results={results} />
               )}
             </motion.div>
           )}

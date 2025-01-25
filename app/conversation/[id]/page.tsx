@@ -33,6 +33,19 @@ interface Message {
   timestamp: string
 }
 
+// Add this interface with the existing interfaces at the top of the file
+interface APIMessage {
+  id: string
+  type: 'user' | 'assistant'
+  content: string
+  citations?: {
+    number: number
+    source: string
+    url: string
+  }[]
+  timestamp: string
+}
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -46,9 +59,9 @@ const containerVariants = {
 
 const messageVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.9 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
+  visible: {
+    opacity: 1,
+    y: 0,
     scale: 1,
     transition: { duration: 0.3 }
   }
@@ -60,7 +73,7 @@ const MessageContent = ({ message }: { message: Message }) => {
   };
 
   const citationNumbers = extractCitations(message.content);
-  const validCitations = message.citations?.filter(c => 
+  const validCitations = message.citations?.filter(c =>
     citationNumbers.includes(c.number)
   ) || [];
 
@@ -69,10 +82,10 @@ const MessageContent = ({ message }: { message: Message }) => {
       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
         {message.type === 'user' ? 'You' : 'AI Assistant'}
       </Typography>
-      <Typography 
-        variant="body1" 
+      <Typography
+        variant="body1"
         component="div"
-        sx={{ 
+        sx={{
           color: 'white',
           whiteSpace: 'pre-wrap',
           '& a': {
@@ -89,9 +102,9 @@ const MessageContent = ({ message }: { message: Message }) => {
             const num = parseInt(part.replace(/[\[\]]/g, ''));
             const citation = validCitations.find(c => c.number === num);
             return citation ? (
-              <Link 
-                key={i} 
-                href={citation.url} 
+              <Link
+                key={i}
+                href={citation.url}
                 target="_blank"
                 rel="noopener"
                 sx={{ cursor: 'pointer' }}
@@ -103,7 +116,7 @@ const MessageContent = ({ message }: { message: Message }) => {
           return part;
         })}
       </Typography>
-      
+
       {validCitations.length > 0 && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="subtitle2" color="text.secondary">
@@ -112,7 +125,7 @@ const MessageContent = ({ message }: { message: Message }) => {
           {validCitations.map((citation) => (
             <Box key={citation.number} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                [{citation.number}] 
+                [{citation.number}]
               </Typography>
               <Link
                 href={citation.url}
@@ -130,10 +143,10 @@ const MessageContent = ({ message }: { message: Message }) => {
           ))}
         </Box>
       )}
-      
-      <Typography 
-        variant="caption" 
-        color="text.secondary" 
+
+      <Typography
+        variant="caption"
+        color="text.secondary"
         sx={{ mt: 1, display: 'block' }}
       >
         {new Date(message.timestamp).toLocaleString()}
@@ -168,18 +181,18 @@ export default function ConversationPage() {
 
   const handleSend = async () => {
     if (!message.trim()) return
-
+  
     const newUserMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
       content: message,
       timestamp: new Date().toISOString()
     }
-
+  
     setMessages(prev => [...prev, newUserMessage])
     setMessage('')
     setIsLoading(true)
-
+  
     try {
       const response = await fetch('http://localhost:3000/api/gemini-search-sub', {
         method: 'POST',
@@ -192,14 +205,14 @@ export default function ConversationPage() {
           previousMessages: messages.slice(-3)
         }),
       })
-
+  
       if (!response.ok) throw new Error('Failed to send message')
-      
-      const data = await response.json()
+  
+      const data: { messages: APIMessage[] } = await response.json()
       if (data.messages?.length) {
-        setMessages(prev => [...prev, ...data.messages.map((msg: any) => ({
+        setMessages(prev => [...prev, ...data.messages.map((msg: APIMessage) => ({
           ...msg,
-          citations: msg.citations?.map((c: any) => ({
+          citations: msg.citations?.map((c) => ({
             ...c,
             url: c.url.startsWith('http') ? c.url : `https://${c.url}`
           }))
@@ -248,6 +261,76 @@ export default function ConversationPage() {
                     </motion.div>
                   </Grid>
                 ))}
+                {isLoading && (
+                  <Grid item xs={12}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                    >
+                      <Card elevation={3} sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(5px)', p: 3 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <motion.div
+                            animate={{
+                              scale: [1, 1.2, 1],
+                              opacity: [0.5, 1, 0.5]
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                            style={{
+                              width: '10px',
+                              height: '10px',
+                              borderRadius: '50%',
+                              backgroundColor: '#fff'
+                            }}
+                          />
+                          <motion.div
+                            animate={{
+                              scale: [1, 1.2, 1],
+                              opacity: [0.5, 1, 0.5]
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                              delay: 0.2
+                            }}
+                            style={{
+                              width: '10px',
+                              height: '10px',
+                              borderRadius: '50%',
+                              backgroundColor: '#fff'
+                            }}
+                          />
+                          <motion.div
+                            animate={{
+                              scale: [1, 1.2, 1],
+                              opacity: [0.5, 1, 0.5]
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                              delay: 0.4
+                            }}
+                            style={{
+                              width: '10px',
+                              height: '10px',
+                              borderRadius: '50%',
+                              backgroundColor: '#fff'
+                            }}
+                          />
+                          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', ml: 1 }}>
+                            Searching ...
+                          </Typography>
+                        </Box>
+                      </Card>
+                    </motion.div>
+                  </Grid>
+                )}
               </AnimatePresence>
             </Grid>
             <div ref={messagesEndRef} />
