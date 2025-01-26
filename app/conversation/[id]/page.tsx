@@ -78,16 +78,25 @@ const MessageContent = ({ message }: { message: Message }) => {
   ) || [];
 
   return (
-    <CardContent>
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-        {message.type === 'user' ? 'You' : 'AI Assistant'}
+    <Box sx={{ py: 3 }}>
+      <Typography 
+        variant="subtitle2" 
+        sx={{ 
+          color: 'rgba(255, 255, 255, 0.7)',
+          mb: 1,
+          fontSize: '0.875rem'
+        }}
+      >
+        {message.type === 'user' ? 'Search' : 'Answer'}
       </Typography>
       <Typography
-        variant="body1"
+        variant={message.type === 'user' ? 'h6' : 'body1'}
         component="div"
         sx={{
           color: 'white',
           whiteSpace: 'pre-wrap',
+          mb: 2,
+          fontWeight: message.type === 'user' ? 600 : 400,
           '& a': {
             color: 'primary.main',
             textDecoration: 'none',
@@ -118,42 +127,43 @@ const MessageContent = ({ message }: { message: Message }) => {
       </Typography>
 
       {validCitations.length > 0 && (
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2" color="text.secondary">
+        <Box sx={{ mt: 2, mb: 1 }}>
+          <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
             Sources:
           </Typography>
-          {validCitations.map((citation) => (
-            <Box key={citation.number} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                [{citation.number}]
-              </Typography>
-              <Link
-                href={citation.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  fontSize: '0.8rem',
-                  '&:hover': { color: 'primary.main' }
-                }}
-              >
-                {citation.source}
-              </Link>
-            </Box>
-          ))}
+          <Grid container spacing={1}>
+            {validCitations.map((citation) => (
+              <Grid item key={citation.number}>
+                <Link
+                  href={citation.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    bgcolor: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: 1,
+                    px: 1,
+                    py: 0.5,
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontSize: '0.75rem',
+                    textDecoration: 'none',
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.1)',
+                      color: 'primary.main'
+                    }
+                  }}
+                >
+                  [{citation.number}] {citation.source}
+                </Link>
+              </Grid>
+            ))}
+          </Grid>
         </Box>
       )}
-
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ mt: 1, display: 'block' }}
-      >
-        {new Date(message.timestamp).toLocaleString()}
-      </Typography>
-    </CardContent>
-  )
-}
+    </Box>
+  );
+};
 
 export default function ConversationPage() {
   const router = useRouter()
@@ -235,140 +245,98 @@ export default function ConversationPage() {
   if (!summaryData || !id) return null
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <motion.div variants={containerVariants} initial="hidden" animate="visible" style={{ height: '100%' }}>
-        <Paper elevation={3} sx={{ p: 4, height: '100%', bgcolor: 'rgba(0, 0, 0, 0.8)', display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ flex: '0 0 auto' }}>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ color: 'white' }}>
-              Conversation Summary
-            </Typography>
-            <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              {summaryData.overview}
-            </Typography>
-          </Box>
+    <Container maxWidth="lg" sx={{ py: 4, minHeight: '100vh' }}>
+      <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'white' }}>
+            {summaryData?.overview}
+          </Typography>
+        </Box>
 
-          <Divider sx={{ my: 3, bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
-
-          <Box sx={{ flex: 1, overflowY: 'auto', mb: 3, scrollBehavior: 'smooth' }}>
-            <Grid container spacing={2}>
-              <AnimatePresence>
-                {messages.map((item) => (
-                  <Grid item xs={12} key={item.id}>
-                    <motion.div variants={messageVariants}>
-                      <Card elevation={3} sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(5px)' }}>
-                        <MessageContent message={item} />
-                      </Card>
-                    </motion.div>
-                  </Grid>
-                ))}
-                {isLoading && (
-                  <Grid item xs={12}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                    >
-                      <Card elevation={3} sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(5px)', p: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <motion.div
-                            animate={{
-                              scale: [1, 1.2, 1],
-                              opacity: [0.5, 1, 0.5]
-                            }}
-                            transition={{
-                              duration: 1.5,
-                              repeat: Infinity,
-                              ease: "easeInOut"
-                            }}
-                            style={{
-                              width: '10px',
-                              height: '10px',
-                              borderRadius: '50%',
-                              backgroundColor: '#fff'
-                            }}
-                          />
-                          <motion.div
-                            animate={{
-                              scale: [1, 1.2, 1],
-                              opacity: [0.5, 1, 0.5]
-                            }}
-                            transition={{
-                              duration: 1.5,
-                              repeat: Infinity,
-                              ease: "easeInOut",
-                              delay: 0.2
-                            }}
-                            style={{
-                              width: '10px',
-                              height: '10px',
-                              borderRadius: '50%',
-                              backgroundColor: '#fff'
-                            }}
-                          />
-                          <motion.div
-                            animate={{
-                              scale: [1, 1.2, 1],
-                              opacity: [0.5, 1, 0.5]
-                            }}
-                            transition={{
-                              duration: 1.5,
-                              repeat: Infinity,
-                              ease: "easeInOut",
-                              delay: 0.4
-                            }}
-                            style={{
-                              width: '10px',
-                              height: '10px',
-                              borderRadius: '50%',
-                              backgroundColor: '#fff'
-                            }}
-                          />
-                          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', ml: 1 }}>
-                            Searching ...
-                          </Typography>
-                        </Box>
-                      </Card>
-                    </motion.div>
-                  </Grid>
-                )}
-              </AnimatePresence>
-            </Grid>
-            <div ref={messagesEndRef} />
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Type your message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              multiline
-              maxRows={4}
-              disabled={isLoading}
+        <Box>
+          {messages.map((item, index) => (
+            <Box 
+              key={item.id}
               sx={{
-                '& .MuiOutlinedInput-root': {
-                  color: 'white',
-                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
-                  '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
-                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
-                },
-                '& .MuiOutlinedInput-input': {
-                  '&::placeholder': { color: 'rgba(255, 255, 255, 0.5)' },
-                },
+                borderBottom: index !== messages.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'
               }}
-            />
-            <IconButton
-              onClick={handleSend}
-              disabled={isLoading || !message.trim()}
-              sx={{ color: 'primary.main', bgcolor: 'rgba(255, 255, 255, 0.1)', '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' } }}
             >
-              <SendIcon />
-            </IconButton>
-          </Box>
-        </Paper>
-      </motion.div>
+              <MessageContent message={item} />
+            </Box>
+          ))}
+          {isLoading && (
+            <Box sx={{ py: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 1, 0.5]
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: i * 0.2
+                    }}
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: '#fff'
+                    }}
+                  />
+                ))}
+                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', ml: 1 }}>
+                  Searching...
+                </Typography>
+              </Box>
+            </Box>
+          )}
+        </Box>
+
+        <Box sx={{ position: 'sticky', bottom: 20, mt: 4 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Ask a follow-up question..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            multiline
+            maxRows={4}
+            disabled={isLoading}
+            sx={{
+              bgcolor: 'rgba(0, 0, 0, 0.6)',
+              backdropFilter: 'blur(10px)',
+              '& .MuiOutlinedInput-root': {
+                color: 'white',
+                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
+                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+                '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+              },
+              '& .MuiOutlinedInput-input': {
+                '&::placeholder': { color: 'rgba(255, 255, 255, 0.5)' },
+              },
+            }}
+            InputProps={{
+              endAdornment: (
+                <IconButton
+                  onClick={handleSend}
+                  disabled={isLoading || !message.trim()}
+                  sx={{ 
+                    color: 'primary.main',
+                    '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' }
+                  }}
+                >
+                  <SendIcon />
+                </IconButton>
+              ),
+            }}
+          />
+        </Box>
+      </Box>
     </Container>
-  )
+  );
 }
