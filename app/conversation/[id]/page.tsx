@@ -245,8 +245,18 @@ export default function ConversationPage() {
   if (!summaryData || !id) return null
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4, minHeight: '100vh' }}>
-      <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
+    <Container 
+      maxWidth="lg" 
+      sx={{ 
+        py: 4, 
+        minHeight: '100vh',
+        px: { xs: 2, sm: 3 }, // Add responsive padding
+      }}
+    >
+      <Box sx={{ 
+        maxWidth: '800px',
+        // Remove mx: 'auto' to align to the left
+      }}>
         <Box sx={{ mb: 4 }}>
           <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'white' }}>
             {summaryData?.overview}
