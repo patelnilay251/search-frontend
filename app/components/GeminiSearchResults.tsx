@@ -178,183 +178,202 @@ export default function GeminiSearchResults() {
   if (!mounted) return null
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-        <IconButton
-          component="a"
-          href="/analytics"
-          aria-label="analytics"
-          sx={{
-            color: 'white',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            },
-          }}
-        >
-          <BarChartIcon />
-        </IconButton>
-      </Box>
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 240,
+        right: 0,
+        bottom: 0,
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        overflow: 'hidden'
+      }}
+    >
+      <Box
+        sx={{
+          height: '100%',
+          overflow: 'auto'
+        }}
       >
-        <Box component="form" onSubmit={handleSearch} sx={{ mb: 6 }}>
-          <motion.div variants={itemVariants}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Enter your search query"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              sx={{ mb: 2 }}
-            />
-          </motion.div>
-          <motion.div variants={itemVariants}>
-            <Button
-              type="submit"
-              variant="outlined"
-              disabled={loading}
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <IconButton
+              component="a"
+              href="/analytics"
+              aria-label="analytics"
               sx={{
-                width: '100%',
-                height: '50px',
-                fontSize: '0.875rem',
-                color: 'black',
-                backgroundColor: 'white',
+                color: 'white',
                 '&:hover': {
-                  backgroundColor: 'black',
-                  color: 'white',
-                }
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                },
               }}
             >
-              {loading ? 'Searching...' : 'Search'}
-            </Button>
-          </motion.div>
-          {showConveyor && (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: '100%',
-                mt: 10
-              }}
-            >
-              <QueryConveyor width="100%" />
-            </Box>
-          )}
-        </Box>
-
-        <AnimatePresence mode="wait">
-          {loading ? (
-            <motion.div
-              key="loader"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <MinimalistLoader progress={progress} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key={`content-${searchKey}`}
-              variants={contentVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-            >
-              {summaryData && (
-                <Box sx={{
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  borderRadius: '4px',
-                  p: 3,
-                  mb: 4,
-                  position: 'relative'
-                }}>
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="h4" gutterBottom sx={{ fontSize: '1.5rem' }}>
-                      Overview
-                    </Typography>
-                    <Typography variant="body1">{summaryData.overview}</Typography>
-                  </Box>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="h5" gutterBottom sx={{ fontSize: '1.25rem' }}>
-                      Key Findings
-                    </Typography>
-                    {summaryData?.keyFindings?.map((finding, index) => (
-                      <Accordion
-                        defaultExpanded
-                        key={index}
-                        sx={{
-                          backgroundColor: 'transparent',
-                          '&:before': {
-                            display: 'none',
-                          }
-                        }}
-                      >
-                        <AccordionSummary
-                          expandIcon={<ExpandMoreIcon />}
-                          sx={{
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.12)'
-                          }}
-                        >
-                          <Typography>{finding.title}</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                          <Typography>{finding.description}</Typography>
-                        </AccordionDetails>
-                      </Accordion>
-                    ))}
-                  </Box>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="h5" gutterBottom sx={{ fontSize: '1.25rem' }}>
-                      Conclusion
-                    </Typography>
-                    <Typography variant="body1">{summaryData.conclusion}</Typography>
-                  </Box>
-
-                  <Box sx={{
-                    mt: 3,
-                    pt: 2,
-                    borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+              <BarChartIcon />
+            </IconButton>
+          </Box>
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+          >
+            <Box component="form" onSubmit={handleSearch} sx={{ mb: 6 }}>
+              <motion.div variants={itemVariants}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  placeholder="Enter your search query"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <Button
+                  type="submit"
+                  variant="outlined"
+                  disabled={loading}
+                  sx={{
+                    width: '100%',
+                    height: '50px',
+                    fontSize: '0.875rem',
+                    color: 'black',
+                    backgroundColor: 'white',
+                    '&:hover': {
+                      backgroundColor: 'black',
+                      color: 'white',
+                    }
+                  }}
+                >
+                  {loading ? 'Searching...' : 'Search'}
+                </Button>
+              </motion.div>
+              {showConveyor && (
+                <Box
+                  sx={{
                     display: 'flex',
-                    justifyContent: 'space-between',
+                    justifyContent: 'center',
                     alignItems: 'center',
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    fontSize: '0.875rem'
-                  }}>
-                    <Typography variant="caption">
-                      Sources: {summaryData?.metadata?.sourcesUsed} •
-                      Timeframe: {summaryData?.metadata?.timeframe}
-                    </Typography>
-                    <IconButton
-                      onClick={handleChatClick}
-                      sx={{
-                        color: 'white',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                        },
-                      }}
-                    >
-                      <ChatIcon />
-                    </IconButton>
-                  </Box>
+                    width: '100%',
+                    mt: 10
+                  }}
+                >
+                  <QueryConveyor width="100%" />
                 </Box>
               )}
+            </Box>
 
-              {results.length > 0 && (
-                <GeminiResults results={results} />
+            <AnimatePresence mode="wait">
+              {loading ? (
+                <motion.div
+                  key="loader"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <MinimalistLoader progress={progress} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={`content-${searchKey}`}
+                  variants={contentVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                >
+                  {summaryData && (
+                    <Box sx={{
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      borderRadius: '4px',
+                      p: 3,
+                      mb: 4,
+                      position: 'relative'
+                    }}>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="h4" gutterBottom sx={{ fontSize: '1.5rem' }}>
+                          Overview
+                        </Typography>
+                        <Typography variant="body1">{summaryData.overview}</Typography>
+                      </Box>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="h5" gutterBottom sx={{ fontSize: '1.25rem' }}>
+                          Key Findings
+                        </Typography>
+                        {summaryData?.keyFindings?.map((finding, index) => (
+                          <Accordion
+                            defaultExpanded
+                            key={index}
+                            sx={{
+                              backgroundColor: 'transparent',
+                              '&:before': {
+                                display: 'none',
+                              }
+                            }}
+                          >
+                            <AccordionSummary
+                              expandIcon={<ExpandMoreIcon />}
+                              sx={{
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.12)'
+                              }}
+                            >
+                              <Typography>{finding.title}</Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                              <Typography>{finding.description}</Typography>
+                            </AccordionDetails>
+                          </Accordion>
+                        ))}
+                      </Box>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="h5" gutterBottom sx={{ fontSize: '1.25rem' }}>
+                          Conclusion
+                        </Typography>
+                        <Typography variant="body1">{summaryData.conclusion}</Typography>
+                      </Box>
+
+                      <Box sx={{
+                        mt: 3,
+                        pt: 2,
+                        borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        fontSize: '0.875rem'
+                      }}>
+                        <Typography variant="caption">
+                          Sources: {summaryData?.metadata?.sourcesUsed} •
+                          Timeframe: {summaryData?.metadata?.timeframe}
+                        </Typography>
+                        <IconButton
+                          onClick={handleChatClick}
+                          sx={{
+                            color: 'white',
+                            '&:hover': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            },
+                          }}
+                        >
+                          <ChatIcon />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  )}
+
+                  {results.length > 0 && (
+                    <GeminiResults results={results} />
+                  )}
+                </motion.div>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </Container>
+            </AnimatePresence>
+          </motion.div>
+        </Container>
+      </Box>
+    </Box>
   )
 }
