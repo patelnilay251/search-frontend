@@ -79,9 +79,9 @@ const MessageContent = ({ message }: { message: Message }) => {
 
   return (
     <Box sx={{ py: 3 }}>
-      <Typography 
-        variant="subtitle2" 
-        sx={{ 
+      <Typography
+        variant="subtitle2"
+        sx={{
           color: 'rgba(255, 255, 255, 0.7)',
           mb: 1,
           fontSize: '0.875rem'
@@ -191,18 +191,18 @@ export default function ConversationPage() {
 
   const handleSend = async () => {
     if (!message.trim()) return
-  
+
     const newUserMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
       content: message,
       timestamp: new Date().toISOString()
     }
-  
+
     setMessages(prev => [...prev, newUserMessage])
     setMessage('')
     setIsLoading(true)
-  
+
     try {
       const response = await fetch('http://localhost:3000/api/gemini-search-sub', {
         method: 'POST',
@@ -215,9 +215,9 @@ export default function ConversationPage() {
           previousMessages: messages.slice(-3)
         }),
       })
-  
+
       if (!response.ok) throw new Error('Failed to send message')
-  
+
       const data: { messages: APIMessage[] } = await response.json()
       if (data.messages?.length) {
         setMessages(prev => [...prev, ...data.messages.map((msg: APIMessage) => ({
@@ -245,108 +245,125 @@ export default function ConversationPage() {
   if (!summaryData || !id) return null
 
   return (
-    <Container 
-      maxWidth="lg" 
-      sx={{ 
-        py: 4, 
-        minHeight: '100vh',
-        px: { xs: 2, sm: 3 }, // Add responsive padding
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 240,
+        right: 0,
+        bottom: 0,
+        border: 'none',
+        overflow: 'hidden'
       }}
     >
-      <Box sx={{ 
-        maxWidth: '800px',
-        // Remove mx: 'auto' to align to the left
-      }}>
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'white' }}>
-            {summaryData?.overview}
-          </Typography>
-        </Box>
-
-        <Box>
-          {messages.map((item, index) => (
-            <Box 
-              key={item.id}
-              sx={{
-                borderBottom: index !== messages.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'
-              }}
-            >
-              <MessageContent message={item} />
+      <Box
+        sx={{
+          height: '100%',
+          overflow: 'auto'
+        }}
+      >
+        <Container
+          maxWidth="lg"
+          sx={{
+            py: 4,
+            minHeight: '100vh',
+            px: { xs: 2, sm: 3 },
+          }}
+        >
+          <Box sx={{ maxWidth: '800px' }}>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'white' }}>
+                {summaryData?.overview}
+              </Typography>
             </Box>
-          ))}
-          {isLoading && (
-            <Box sx={{ py: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.5, 1, 0.5]
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: i * 0.2
-                    }}
-                    style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: '#fff'
-                    }}
-                  />
-                ))}
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', ml: 1 }}>
-                  Searching...
-                </Typography>
-              </Box>
-            </Box>
-          )}
-        </Box>
 
-        <Box sx={{ position: 'sticky', bottom: 20, mt: 4 }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Ask a follow-up question..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            multiline
-            maxRows={4}
-            disabled={isLoading}
-            sx={{
-              bgcolor: 'rgba(0, 0, 0, 0.6)',
-              backdropFilter: 'blur(10px)',
-              '& .MuiOutlinedInput-root': {
-                color: 'white',
-                '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
-                '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
-                '&.Mui-focused fieldset': { borderColor: 'primary.main' },
-              },
-              '& .MuiOutlinedInput-input': {
-                '&::placeholder': { color: 'rgba(255, 255, 255, 0.5)' },
-              },
-            }}
-            InputProps={{
-              endAdornment: (
-                <IconButton
-                  onClick={handleSend}
-                  disabled={isLoading || !message.trim()}
-                  sx={{ 
-                    color: 'primary.main',
-                    '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' }
+            <Box>
+              {messages.map((item, index) => (
+                <Box
+                  key={item.id}
+                  sx={{
+                    borderBottom: index !== messages.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'
                   }}
                 >
-                  <SendIcon />
-                </IconButton>
-              ),
-            }}
-          />
-        </Box>
+                  <MessageContent message={item} />
+                </Box>
+              ))}
+              {isLoading && (
+                <Box sx={{ py: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.5, 1, 0.5]
+                        }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: i * 0.2
+                        }}
+                        style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: '#fff'
+                        }}
+                      />
+                    ))}
+                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', ml: 1 }}>
+                      Searching...
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+              <div ref={messagesEndRef} /> {/* Add this line */}
+            </Box>
+
+            <Box sx={{ position: 'sticky', bottom: 20, mt: 4 }}>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="Ask a follow-up question..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                multiline
+                maxRows={4}
+                disabled={isLoading}
+                sx={{
+                  bgcolor: 'rgba(0, 0, 0, 0.6)',
+                  backdropFilter: 'blur(10px)',
+                  '& .MuiOutlinedInput-root': {
+                    color: 'white',
+                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
+                    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+                    '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    '&::placeholder': { color: 'rgba(255, 255, 255, 0.5)' },
+                  },
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <IconButton
+                      onClick={handleSend}
+                      disabled={isLoading || !message.trim()}
+                      sx={{
+                        color: 'primary.main',
+                        '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' }
+                      }}
+                    >
+                      <SendIcon />
+                    </IconButton>
+                  ),
+                }}
+              />
+            </Box>
+          </Box>
+        </Container>
       </Box>
-    </Container>
+    </Box>
   );
 }
