@@ -3,17 +3,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useConversationStore } from '../../store/conversationStore'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   Container,
   Typography,
-  Paper,
   Box,
   TextField,
   IconButton,
-  Divider,
-  Card,
-  CardContent,
   Grid,
   Link,
 } from '@mui/material'
@@ -46,26 +42,6 @@ interface APIMessage {
   timestamp: string
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      duration: 0.5
-    }
-  }
-}
-
-const messageVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.9 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.3 }
-  }
-}
 
 const MessageContent = ({ message }: { message: Message }) => {
   const extractCitations = (content: string) => {
