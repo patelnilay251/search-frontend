@@ -14,6 +14,21 @@ import {
   Link,
 } from '@mui/material'
 import SendIcon from '@mui/icons-material/Send'
+import GeographicVisualization from '@/app/components/OutputTypes/GeographicVisualization'
+import FinancialVisualization from '@/app/components/OutputTypes/FinancialVisualization'
+
+interface VisualizationData {
+  type: 'geographic' | 'financial'
+  data: any | null
+  status: 'success' | 'error'
+  error?: string
+}
+
+interface VisualizationContext {
+  type: 'geographic' | 'financial'
+  description: string
+}
+
 
 interface Citation {
   number: number
@@ -26,6 +41,8 @@ interface Message {
   type: 'user' | 'assistant'
   content: string
   citations?: Citation[]
+  visualizationData?: VisualizationData
+  visualizationContext?: VisualizationContext
   timestamp: string
 }
 
@@ -39,6 +56,8 @@ interface APIMessage {
     source: string
     url: string
   }[]
+  visualizationData?: VisualizationData
+  visualizationContext?: VisualizationContext
   timestamp: string
 }
 
@@ -52,6 +71,26 @@ const MessageContent = ({ message }: { message: Message }) => {
   const validCitations = message.citations?.filter(c =>
     citationNumbers.includes(c.number)
   ) || [];
+
+  const renderVisualization = () => {
+    if (!message.visualizationData || !message.visualizationContext || message.visualizationData.data === null) {
+      return null;
+    }
+
+    const props = {
+      data: message.visualizationData.data,
+      context: message.visualizationContext
+    };
+
+    switch (message.visualizationData.type) {
+      case 'geographic':
+        return <GeographicVisualization {...props} />;
+      case 'financial':
+        return <FinancialVisualization {...props} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <Box sx={{ py: 3 }}>
@@ -135,6 +174,16 @@ const MessageContent = ({ message }: { message: Message }) => {
               </Grid>
             ))}
           </Grid>
+        </Box>
+      )}
+
+      {/* Add visualization after citations */}
+      {renderVisualization() && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
+            Visualization:
+          </Typography>
+          {renderVisualization()}
         </Box>
       )}
     </Box>
