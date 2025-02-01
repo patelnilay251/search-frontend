@@ -19,3 +19,34 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+.maplibregl-ctrl-attrib-inner {
+  display: none;
+}
+
+.dark .maplibregl-ctrl button {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.dark .maplibregl-ctrl button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.dark .maplibregl-ctrl-group {
+  background-color: rgba(12, 31, 63, 0.7);
+}
+
+.dark .maplibregl-ctrl-group button+button {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Smooth transitions for theme changes */
+.maplibregl-canvas {
+  transition: filter 0.3s ease-in-out;
+}
+
+.dark .maplibregl-canvas {
+  filter: brightness(0.8) contrast(1.2) saturate(1.2);
+}
