@@ -16,16 +16,17 @@ import {
 import SendIcon from '@mui/icons-material/Send'
 import GeographicVisualization from '@/app/components/OutputTypes/GeographicVisualization'
 import FinancialVisualization from '@/app/components/OutputTypes/FinancialVisualization'
+import WeatherVisualization from '@/app/components/OutputTypes/WeatherVisualization'
 
 interface VisualizationData {
-  type: 'geographic' | 'financial'
+  type: 'geographic' | 'financial' | 'weather'
   data: any | null
   status: 'success' | 'error'
   error?: string
 }
 
 interface VisualizationContext {
-  type: 'geographic' | 'financial'
+  type: 'geographic' | 'financial' | 'weather'
   description: string
 }
 
@@ -81,12 +82,15 @@ const MessageContent = ({ message }: { message: Message }) => {
       data: message.visualizationData.data,
       context: message.visualizationContext
     };
+    //console.log('Visualization props:', props);
 
     switch (message.visualizationData.type) {
       case 'geographic':
         return <GeographicVisualization {...props} />;
       case 'financial':
         return <FinancialVisualization {...props} />;
+      case 'weather':
+        return <WeatherVisualization {...props} />;
       default:
         return null;
     }
