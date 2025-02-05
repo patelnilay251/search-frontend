@@ -112,7 +112,7 @@ function calculateRelevanceScore(result: GoogleSearchItem, query: string): numbe
 
 //#endregion
 
-export async function OPTIONS(req: NextRequest): Promise<NextResponse<null>> {
+export async function OPTIONS(): Promise<NextResponse<null>> {
     return NextResponse.json(null, {
         headers: {
             'Access-Control-Allow-Origin': 'http://localhost:3001',

@@ -18,9 +18,94 @@ import GeographicVisualization from '@/app/components/OutputTypes/GeographicVisu
 import FinancialVisualization from '@/app/components/OutputTypes/FinancialVisualization'
 import WeatherVisualization from '@/app/components/OutputTypes/WeatherVisualization'
 
+interface GeographicData {
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  formattedAddress: string;
+  placeId: number;
+  locationType: string;
+}
+
+interface GeographicVisualizationProps {
+  data: GeographicData;
+  context: {
+    description: string;
+  };
+}
+
+interface StockData {
+  date: string;
+  close: number;
+  volume: number;
+}
+
+interface FinancialOverview {
+  Symbol: string;
+  Name: string;
+  MarketCapitalization: string;
+  PERatio: string;
+  DividendYield: string;
+  EPS: string;
+  AnalystTargetPrice: string;
+  [key: string]: string;
+}
+
+interface FinancialVisualizationProps {
+  data: {
+    overview: FinancialOverview;
+    stockData: StockData[];
+  };
+  context: {
+    description: string;
+  };
+}
+
+interface WeatherData {
+  location: string;
+  current: {
+    temperature: number;
+    humidity: number;
+    wind_speed: number;
+    wind_direction: number;
+    feels_like: number;
+    description: string;
+    units: {
+      temperature: string;
+      wind_speed: string;
+    };
+  };
+  hourly: {
+    time: string[];
+    temperature: number[];
+    humidity: number[];
+    precipitation_probability: number[];
+    visibility: number[];
+    uv_index: number[];
+  };
+  daily: {
+    time: string[];
+    temperature_max: number[];
+    temperature_min: number[];
+    sunrise: string[];
+    sunset: string[];
+    uv_index_max: number[];
+    precipitation_probability: number[];
+  };
+  timestamp: string;
+}
+
+interface WeatherVisualizationProps {
+  data: WeatherData;
+  context: {
+    description: string;
+  };
+}
+
 interface VisualizationData {
   type: 'geographic' | 'financial' | 'weather'
-  data: any | null
+  data: unknown;
   status: 'success' | 'error'
   error?: string
 }
@@ -79,18 +164,18 @@ const MessageContent = ({ message }: { message: Message }) => {
     }
 
     const props = {
-      data: message.visualizationData.data,
+      data: message.visualizationData.data as unknown,
       context: message.visualizationContext
     };
     //console.log('Visualization props:', props);
 
     switch (message.visualizationData.type) {
       case 'geographic':
-        return <GeographicVisualization {...props} />;
+        return <GeographicVisualization {...props as GeographicVisualizationProps} />;
       case 'financial':
-        return <FinancialVisualization {...props} />;
+        return <FinancialVisualization {...props as FinancialVisualizationProps} />;
       case 'weather':
-        return <WeatherVisualization {...props} />;
+        return <WeatherVisualization {...props as WeatherVisualizationProps} />;
       default:
         return null;
     }

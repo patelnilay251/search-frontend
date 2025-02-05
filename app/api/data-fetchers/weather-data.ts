@@ -39,10 +39,10 @@ interface WeatherResponse {
     status: 'success' | 'error';
 }
 
-interface GeoData {
-    lat: string;
-    lon: string;
-}
+// interface GeoData {
+//     lat: string;
+//     lon: string;
+// }
 
 const weatherCodes: { [key: number]: string } = {
     0: 'Clear sky',

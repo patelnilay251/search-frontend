@@ -25,6 +25,29 @@ interface FinancialResponse {
     error?: string;
 }
 
+// interface AlphaVantageOverviewResponse {
+//     'Error Message'?: string;
+//     'Note'?: string;
+//     Symbol: string;
+//     Name: string;
+//     Description: string;
+//     [key: string]: string | undefined;
+// }
+
+interface AlphaVantageTimeSeriesResponse {
+    'Error Message'?: string;
+    'Note'?: string;
+    'Time Series (Daily)': {
+        [date: string]: {
+            '1. open': string;
+            '2. high': string;
+            '3. low': string;
+            '4. close': string;
+            '5. volume': string;
+        }
+    }
+}
+
 const ALPHA_VANTAGE_FUNCTIONS = {
     OVERVIEW: 'OVERVIEW',
     TIME_SERIES_DAILY: 'TIME_SERIES_DAILY',
@@ -47,7 +70,7 @@ async function fetchCompanyOverview(symbol: string): Promise<FinancialOverview |
     }
 }
 
-async function fetchStockData(symbol: string): Promise<any | null> {
+async function fetchStockData(symbol: string): Promise<AlphaVantageTimeSeriesResponse | null> {
     try {
 
         const encodedSymbol = encodeURIComponent(symbol.trim());
@@ -69,7 +92,7 @@ async function fetchStockData(symbol: string): Promise<any | null> {
     }
 }
 
-function processStockData(rawData: any): StockData[] {
+function processStockData(rawData: AlphaVantageTimeSeriesResponse): StockData[] {
     if (!rawData || !rawData['Time Series (Daily)']) {
         console.error('Invalid stock data received:', rawData);
         return [];

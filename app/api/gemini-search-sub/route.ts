@@ -260,7 +260,8 @@ RESPONSE RULES:
         try {
             const cleanedResponse = responseText.replace(/```json/g, '').replace(/```/g, '');
             structuredResponse = JSON.parse(cleanedResponse);
-        } catch (e: unknown) {
+        } catch (e) {
+            console.log(e);
             const citationMatches = [...responseText.matchAll(/\[(\d+)\]/g)];
             const citations: Citation[] = citationMatches
                 .map((match) => {

@@ -41,10 +41,10 @@ interface FinancialOverview {
     [key: string]: string;
 }
 
-interface FinancialData {
-    overview: FinancialOverview;
-    stockData: StockData[];
-}
+// interface FinancialData {
+//     overview: FinancialOverview;
+//     stockData: StockData[];
+// }
 
 interface FinancialVisualizationProps {
     data: {
@@ -75,7 +75,7 @@ interface ChartConfig {
 }
 
 const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, context }) => {
-    const [activeTab, setActiveTab] = useState(0);
+    //const [activeTab, setActiveTab] = useState(0);
     const { overview, stockData } = data;
 
     // Chart configuration state

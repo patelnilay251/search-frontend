@@ -4,14 +4,13 @@ import {
     Typography,
     Paper,
     Grid,
-    useTheme
 } from '@mui/material';
 import { styled, keyframes } from '@mui/material/styles';
-import ThermostatIcon from '@mui/icons-material/Thermostat';
+//import ThermostatIcon from '@mui/icons-material/Thermostat';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import AirIcon from '@mui/icons-material/Air';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import WbSunnyIcon from '@mui/icons-material/WbSunny';
+//import VisibilityIcon from '@mui/icons-material/Visibility';
+//import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import {
     LineChart,
     Line,
@@ -68,7 +67,7 @@ const float = keyframes`
   100% { transform: translateY(0px); }
 `;
 
-const AnimatedWeatherCard = styled(Paper)(({ theme }) => ({
+const AnimatedWeatherCard = styled(Paper)(({ }) => ({
     animation: `${float} 6s ease-in-out infinite`,
     background: 'rgba(255, 255, 255, 0.1)',
     backdropFilter: 'blur(10px)',
@@ -79,8 +78,8 @@ const AnimatedWeatherCard = styled(Paper)(({ theme }) => ({
     },
 }));
 
-const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({ data, context }) => {
-    const theme = useTheme();
+const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({ data }) => {
+    //const theme = useTheme();
 
     const hourlyData = useMemo(() => {
         return data.hourly.time.map((time, index) => ({
