@@ -130,7 +130,7 @@ export default function GeminiSearchResults() {
         })
       }, 300)
 
-      const response = await fetch('http://localhost:3000/api/gemini-search', {
+      const response = await fetch('/api/gemini-search', {
         method: 'POST',
         credentials: 'include',
         headers: {

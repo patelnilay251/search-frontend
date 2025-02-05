@@ -233,7 +233,7 @@ export default function ConversationPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('http://localhost:3000/api/gemini-search-sub', {
+      const response = await fetch('/api/gemini-search-sub', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
