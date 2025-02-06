@@ -95,63 +95,62 @@ async function getRelevantSearchResults(
     conversationContext: string
 ): Promise<GetRelevantSearchResultsReturn> {
     try {
-        console.log('🔎 Starting search for query:', query);
 
         const combinedPrompt = `Analyze the following query and provide both search optimization and visualization needs.
 
-Query: "${query}"
-Context: "${summaryData.overview}"
-Conversation: "${conversationContext}"
+        Query: "${query}"
+        Context: "${summaryData.overview}"
+        Conversation: "${conversationContext}"
 
-Respond in JSON format only:
-{
-    "enrichedQuery": "optimized search query",
-    "visualization": {
-        "type": "none" | "geographic" | "financial" | "weather",
-        "entities": ["use stock symbol for companies, full name for locations"],
-        "confidence": 0-1 score,
-        "details": {
-            "stockSymbol": "AAPL",  // Include only for financial type
-            "location": "Paris"      // Include for geographic and weather type
+        Respond in JSON format only:
+        {
+            "enrichedQuery": "optimized search query",
+            "visualization": {
+                "type": "none" | "geographic" | "financial" | "weather",
+                "entities": ["use stock symbol for companies, full name for locations"],
+                "confidence": 0-1 score,
+                "details": {
+                    "stockSymbol": "AAPL",  // Include only for financial type
+                    "location": "Paris"      // Include for geographic and weather type
+                }
+            }
         }
-    }
-}
 
-Examples:
-Query: "How is Apple stock performing after Vision Pro launch?"
-Response: {
-    "enrichedQuery": "Apple AAPL stock performance Vision Pro launch impact",
-    "visualization": {
-        "type": "financial",
-        "entities": ["AAPL"],
-        "confidence": 1,
-        "details": { "stockSymbol": "AAPL" }
-    }
-}
+        Examples:
+        Query: "How is Apple stock performing after Vision Pro launch?"
+        Response: {
+            "enrichedQuery": "Apple AAPL stock performance Vision Pro launch impact",
+            "visualization": {
+                "type": "financial",
+                "entities": ["AAPL"],
+                "confidence": 1,
+                "details": { "stockSymbol": "AAPL" }
+            }
+        }
 
-Query: "Tourist attractions near Eiffel Tower"
-Response: {
-    "enrichedQuery": "popular tourist attractions landmarks near Eiffel Tower Paris",
-    "visualization": {
-        "type": "geographic",
-        "entities": ["Eiffel Tower, Paris"],
-        "confidence": 1,
-        "details": { "location": "Paris" }
-    }
-}
+        Query: "Tourist attractions near Eiffel Tower"
+        Response: {
+            "enrichedQuery": "popular tourist attractions landmarks near Eiffel Tower Paris",
+            "visualization": {
+                "type": "geographic",
+                "entities": ["Eiffel Tower, Paris"],
+                "confidence": 1,
+                "details": { "location": "Paris" }
+            }
+        }
 
-Query: "What's the weather like in Tokyo?"
-Response: {
-    "enrichedQuery": "current weather conditions Tokyo Japan",
-    "visualization": {
-        "type": "weather",
-        "entities": ["Tokyo, Japan"],
-        "confidence": 1,
-        "details": { "location": "Tokyo" }
-    }
-}`;
+        Query: "What's the weather like in Tokyo?"
+        Response: {
+            "enrichedQuery": "current weather conditions Tokyo Japan",
+            "visualization": {
+                "type": "weather",
+                "entities": ["Tokyo, Japan"],
+                "confidence": 1,
+                "details": { "location": "Tokyo" }
+            }
+        }`;
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const result: GenerationResponse = await model.generateContent(combinedPrompt);
         const analysisText = result.response.text().trim();
 
@@ -173,6 +172,7 @@ Response: {
                 additionalData = await fetchWeatherData(visualizationData.details.location);
             }
         }
+        console.log('🔎 Starting search for query:', parsedResult.enrichedQuery);
 
         const searchResponse = await customsearch.cse.list({
             auth: process.env.GOOGLE_API_KEY,
@@ -216,7 +216,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<PostResponseB
             conversationContext
         );
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         const searchContext = searchResults
             .map((result, index) => `[${index + 1}] ${result.source}: ${result.title}\n${result.snippet}`)
@@ -224,33 +224,36 @@ export async function POST(req: NextRequest): Promise<NextResponse<PostResponseB
 
         const systemPrompt = `You are an AI assistant providing detailed, accurate responses. ALWAYS RESPOND WITH VALID JSON FORMAT:
 
-{
-  "response": "Your formatted response with [1][2] citations",
-  "citations": [
-    {
-      "number": 1,
-      "source": "example.com",
-      "url": "https://example.com/article"
-    }
-  ],
-  "visualizationContext": {
-    "type": "geographic|financial|weather|none",
-    "description": "Brief description of why this visualization is relevant"
-  }
-}
+        {
+        "response": "Your formatted response with [1][2] citations",
+        "citations": [
+            {
+            "number": 1,
+            "source": "example.com",
+            "url": "https://example.com/article"
+            }
+        ],
+        "visualizationContext": {
+            "type": "geographic|financial|weather|none",
+            "description": "Brief description of why this visualization is relevant"
+        }
+        }
 
-CONVERSATION CONTEXT:
-Topic Summary: ${summaryData.overview}
-Previous Messages: ${conversationContext}
-CURRENT QUERY: "${message}"
-SEARCH RESULTS: ${searchContext}
-${visualizationData ? `VISUALIZATION DATA: ${JSON.stringify(visualizationData)}` : ''}
+        CONVERSATION CONTEXT:
+        Topic Summary: ${summaryData.overview}
+        Previous Messages: ${conversationContext}
+        CURRENT QUERY: "${message}"
+        SEARCH RESULTS: ${searchContext}
+        ${visualizationData ? `VISUALIZATION DATA: ${JSON.stringify(visualizationData)}` : ''}
 
-RESPONSE RULES:
-1. Use only [1-5] citations from search results
-2. Maintain conversation context
-3. Always valid JSON format
-4. If visualization data is provided, explain its relevance in visualizationContext`;
+        RESPONSE RULES:
+        1. Use citations from search results , to form well detailed answer of 300 - 400 words 
+        2. Maintain conversation context
+        3. Always valid JSON format
+        4. If visualization data is provided, explain its relevance in visualizationContext
+        5. If the search results are insufficient or not relevant, 
+        integrate both the provided search results and 
+        your internal training data to generate the best possible result.`;
 
         const genResult: GenerationResponse = await model.generateContent(systemPrompt);
         const responseText = genResult.response.text();

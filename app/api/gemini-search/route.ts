@@ -156,55 +156,58 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
                 const relevanceDiff = b.relevanceScore - a.relevanceScore;
                 return (recencyScore + relevanceDiff) / 2;
             })
-            .slice(0, 5);
+            .slice(0, 8);
 
         // Step 2: Enhanced Gemini Prompt
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-001' });
 
         const systemPrompt = `You are a highly intelligent assistant generating comprehensive summaries from search results.
 
-Your response must be a valid JSON object with the following structure:
-{
-    "overview": "string containing 2-3 sentence overview",
-    "keyFindings": [
+        Your response must be a valid JSON object with the following structure:
         {
-            "title": "string - brief title for the finding",
-            "description": "string - detailed explanation"
+            "overview": "Use citations from search results , to form well detailed answer of 300 - 400 words while maintaining clarity and completeness ",
+            "keyFindings": [
+                {
+                    "title": "string - brief title for the finding",
+                    "description": "string - detailed explanation"
+                }
+            ],
+            "conclusion": "string containing final context/summary of length one paragraph",
+            "metadata": {
+                "sourcesUsed": number,
+                "timeframe": "string - date range of sources",
+                "queryContext": "string - search query"
+            }
         }
-    ],
-    "conclusion": "string containing final context/summary",
-    "metadata": {
-        "sourcesUsed": number,
-        "timeframe": "string - date range of sources",
-        "queryContext": "string - search query"
-    }
-}
 
-Context:
-- Query: "${query}"
-- Time: ${new Date().toISOString()}
-- Number of sources: ${processedResults.length}
+        Context:
+        - Query: "${query}"
+        - Time: ${new Date().toISOString()}
+        - Number of sources: ${processedResults.length}
 
-Guidelines for summary generation:
-1. Overview should focus on most recent and relevant information
-2. Include 3-4 key findings supported by sources
-3. All information must be directly supported by sources
-4. Maintain objectivity and clarity
-5. Include relevant dates where important
-6. Do not deviate from the JSON structure
-7. Ensure response is always parseable JSON
+        Guidelines for summary generation:
+        1. Overview should focus on most recent and relevant information
+        2. Include 3-4 key findings supported by sources , key findings should be 100-200 words each
+        3. All information must be directly supported by sources and present the information impartially without bias or opinion
+        4. Maintain objectivity and clarity
+        5. If the search results are insufficient or not relevant, 
+        integrate both the provided search results and 
+        your internal training data to generate the best possible result.
+        5. Include relevant dates where important
+        6. Do not deviate from the JSON structure
+        7. Ensure response is always parseable JSON
 
-Search Results:
-${processedResults
+        Search Results:
+        ${processedResults
                 .map((result, index) => {
                     const date = new Date(result.publishedDate).toLocaleDateString();
                     return `${index + 1}. [${date}] [${result.source}]
-Title: ${result.title}
-Content: ${result.text}`;
+        Title: ${result.title}
+        Content: ${result.text}`;
                 })
                 .join('\n\n')}
 
-Remember: Response must be valid JSON with no additional text or formatting outside the JSON structure`;
+        Remember: Response must be valid JSON with no additional text or formatting outside the JSON structure`;
 
         const generationResult: GenerationResponse = await model.generateContent(systemPrompt);
         let summaryData = generationResult.response.text();
