@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-
 interface SearchRequest {
     query: string;
 }
@@ -41,14 +40,11 @@ interface APIResponse {
     originalQuery: string;
 }
 
-
 interface GenerationResponse {
     response: {
         text: () => string;
     };
 }
-
-
 
 const customsearch = google.customsearch('v1');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '');
@@ -72,7 +68,7 @@ function extractDate(result: GoogleSearchItem): string {
         result.pagemap?.metatags?.[0]?.['article:published_time'] ?? null,
         result.pagemap?.metatags?.[0]?.['date'] ?? null,
         result.pagemap?.newsarticle?.[0]?.datepublished ?? null,
-        result.snippet.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? null
+        result.snippet.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? null,
     ];
 
     const validDate = possibleDates.find(
@@ -81,12 +77,7 @@ function extractDate(result: GoogleSearchItem): string {
     return validDate || new Date().toISOString();
 }
 
-function getRecencyScore(dateString: string): number {
-    const date = new Date(dateString);
-    const now = new Date();
-    const daysDifference = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
-    return Math.max(0, 1 - daysDifference / 7);
-}
+
 
 function extractDomain(url: string): string {
     try {
@@ -96,21 +87,60 @@ function extractDomain(url: string): string {
     }
 }
 
-function calculateRelevanceScore(result: GoogleSearchItem, query: string): number {
-    const queryTerms = query.toLowerCase().split(' ');
-    const content = `${result.title} ${result.snippet}`.toLowerCase();
+async function decomposeQuery(query: string): Promise<string[]> {
+    const decompositionPrompt = `Decompose the following complex query into a list of clear, 
+    concise sub-queries for a multi-step search process. Return the list in JSON array format.
+    Return ONLY an array of strings, not objects.
+    Be attentive to add any year data month or time frame if required in sub query,
+    like if it feels like that would help to improve the accuracy.
 
-    const termMatch =
-        queryTerms.filter((term) => content.includes(term)).length / queryTerms.length;
-    const titleRelevance =
-        queryTerms.filter((term) => result.title.toLowerCase().includes(term)).length /
-        queryTerms.length;
-    const freshness = getRecencyScore(extractDate(result));
+    Query: "${query}"`;
 
-    return termMatch * 0.4 + titleRelevance * 0.4 + freshness * 0.2;
+    try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-001' });
+        const result: GenerationResponse = await model.generateContent(decompositionPrompt);
+        let decompositionText = result.response.text();
+        decompositionText = decompositionText.replace(/```json\s*|\s*```/g, '').trim();
+        const subQueries = JSON.parse(decompositionText);
+        if (Array.isArray(subQueries)) {
+            return subQueries.map(q => typeof q === 'string' ? q : q.query || String(q));
+        } else {
+            return [query];
+        }
+    } catch (error) {
+        console.error("Error during query decomposition, using original query. Error:", error);
+        return [query];
+    }
 }
 
-//#endregion
+async function performSubQuerySearch(subQuery: string): Promise<GoogleSearchItem[]> {
+    try {
+        const comprehensiveResponse = await customsearch.cse.list({
+            auth: process.env.GOOGLE_API_KEY,
+            cx: process.env.GOOGLE_SEARCH_ENGINE_ID,
+            q: String(subQuery),
+            num: 5
+        });
+
+        const recentResponse = await customsearch.cse.list({
+            auth: process.env.GOOGLE_API_KEY_TWO,
+            cx: process.env.GOOGLE_SEARCH_ENGINE_ID_TWO,
+            q: enrichQuery(String(subQuery)),
+            num: 10
+        });
+
+        const comprehensiveResults: GoogleSearchItem[] =
+            (comprehensiveResponse.data as GoogleSearchResponse).items || [];
+        const recentResults: GoogleSearchItem[] =
+            (recentResponse.data as GoogleSearchResponse).items || [];
+
+        return [...comprehensiveResults, ...recentResults];
+    } catch (error) {
+        console.error("Error performing sub-query search for:", subQuery, "Error:", error);
+        return [];
+    }
+}
+
 
 export async function OPTIONS(): Promise<NextResponse<null>> {
     return NextResponse.json(null, {
@@ -125,47 +155,41 @@ export async function OPTIONS(): Promise<NextResponse<null>> {
 
 export async function POST(req: NextRequest): Promise<NextResponse<APIResponse | { error: string }>> {
     try {
+        console.log('🚀 POST request received');
         const { query } = (await req.json()) as SearchRequest;
+        console.log('📝 Received query:', query);
 
-        // Step 1: Enhanced Google Search
-        const searchResponse = await customsearch.cse.list({
-            auth: process.env.GOOGLE_API_KEY,
-            cx: process.env.GOOGLE_SEARCH_ENGINE_ID,
-            q: enrichQuery(query),
-            num: 10,
-            dateRestrict: 'w1',
-            sort: 'date:r:20',
-        });
+        // Step 1: Query Decomposition
+        console.log('🔄 Starting query decomposition...');
+        const subQueries = await decomposeQuery(query);
+        console.log("Decomposed sub-queries:", subQueries);
 
-        const searchResults: GoogleSearchItem[] = (searchResponse.data as GoogleSearchResponse).items || [];
-        const processedResults: ProcessedResult[] = searchResults
-            .filter((result) => {
-                const relevanceScore = calculateRelevanceScore(result, query);
-                return relevanceScore > 0.6;
-            })
-            .map((result): ProcessedResult => ({
-                title: result.title,
-                text: cleanText(result.snippet),
-                url: result.link,
-                publishedDate: extractDate(result),
-                source: extractDomain(result.link),
-                relevanceScore: calculateRelevanceScore(result, query),
-            }))
-            .sort((a, b) => {
-                const recencyScore = getRecencyScore(a.publishedDate) - getRecencyScore(b.publishedDate);
-                const relevanceDiff = b.relevanceScore - a.relevanceScore;
-                return (recencyScore + relevanceDiff) / 2;
-            })
-            .slice(0, 8);
+        // Step 2: Intermediate Searches for each sub-query
+        const subQueryResultsPromises = subQueries.map((subQuery) => performSubQuerySearch(subQuery));
+        const subQueryResultsArrays = await Promise.all(subQueryResultsPromises);
+        console.log('🔍 Completed intermediate searches for all sub-queries');
+        const aggregatedResults = subQueryResultsArrays.flat();
+        console.log('📊 Total aggregated results:', aggregatedResults.length);
 
-        // Step 2: Enhanced Gemini Prompt
+        const processedResults: ProcessedResult[] = aggregatedResults.map((result): ProcessedResult => ({
+            title: result.title,
+            text: cleanText(result.snippet),
+            url: result.link,
+            publishedDate: extractDate(result),
+            source: extractDomain(result.link),
+            relevanceScore: 0,
+        }));
+
+        console.log('✨ Processed and filtered results:', processedResults.length);
+
+
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-001' });
-
-        const systemPrompt = `You are a highly intelligent assistant generating comprehensive summaries from search results.
+        const systemPrompt = `You are a highly intelligent assistant generating comprehensive summaries from search results using a multi-step reasoning process.
 
         Your response must be a valid JSON object with the following structure:
         {
-            "overview": "Use citations from search results , to form well detailed answer of 300 - 400 words while maintaining clarity and completeness ",
+            "overview": "Use citations from search results to form a well-detailed answer of 300 - 400 words while maintaining clarity and completeness. 
+            Do not use * character in output.Don't reveal what is happeing internally or resoning just make overview of results and nothing else",
             "keyFindings": [
                 {
                     "title": "string - brief title for the finding",
@@ -181,23 +205,12 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
         }
 
         Context:
-        - Query: "${query}"
+        - Original Query: "${query}"
+        - Decomposed Sub-Queries: ${subQueries.join('; ')}
         - Time: ${new Date().toISOString()}
-        - Number of sources: ${processedResults.length}
+        - Number of intermediate sources: ${processedResults.length}
 
-        Guidelines for summary generation:
-        1. Overview should focus on most recent and relevant information
-        2. Include 3-4 key findings supported by sources , key findings should be 100-200 words each
-        3. All information must be directly supported by sources and present the information impartially without bias or opinion
-        4. Maintain objectivity and clarity
-        5. If the search results are insufficient or not relevant, 
-        integrate both the provided search results and 
-        your internal training data to generate the best possible result.
-        5. Include relevant dates where important
-        6. Do not deviate from the JSON structure
-        7. Ensure response is always parseable JSON
-
-        Search Results:
+        Intermediate Search Results:
         ${processedResults
                 .map((result, index) => {
                     const date = new Date(result.publishedDate).toLocaleDateString();
@@ -207,10 +220,22 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
                 })
                 .join('\n\n')}
 
-        Remember: Response must be valid JSON with no additional text or formatting outside the JSON structure`;
+        Instructions:
+        
+        3. Combine the findings from all sub-queries into a coherent final answer.
+        4. Ensure the final conclusion 100-200 words reflects the reasoning process without revealing internal chain-of-thought details.
+        1. Overview should focus on most recent and relevant information, without revealing internal chain of thought deatils 
+        2. Include 3-4 key findings supported by sources , key findings should be 100-200 words each
+        3. All information must be directly supported by sources and present the information impartially without bias or opinion
+        4. Maintain objectivity and clarity
+        6. Do not deviate from the JSON structure
+        7. Ensure response is always parseable JSON
+
+        Remember: Response must be valid JSON with no additional text or formatting outside the JSON structure.`;
 
         const generationResult: GenerationResponse = await model.generateContent(systemPrompt);
         let summaryData = generationResult.response.text();
+        console.log('🤖 Generated summary data successfully');
 
         // Clean up the JSON string by removing markdown code block markers
         summaryData = summaryData.replace(/```json\s*|\s*```/g, '').trim();
@@ -230,7 +255,11 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
             },
         });
     } catch (error: unknown) {
-        console.error('Error in API:', error);
+        console.error('❌ Error in API:', error);
+        console.log('🔍 Error details:', {
+            name: error instanceof Error ? error.name : 'Unknown',
+            message: error instanceof Error ? error.message : String(error)
+        });
         return NextResponse.json(
             { error: 'Failed to fetch or process results' },
             {
