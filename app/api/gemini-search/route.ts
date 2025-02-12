@@ -122,8 +122,8 @@ async function performSubQuerySearch(subQuery: string): Promise<GoogleSearchItem
         });
 
         const recentResponse = await customsearch.cse.list({
-            auth: process.env.GOOGLE_API_KEY_TWO,
-            cx: process.env.GOOGLE_SEARCH_ENGINE_ID_TWO,
+            auth: process.env.GOOGLE_API_KEY,
+            cx: process.env.GOOGLE_SEARCH_ENGINE_ID,
             q: enrichQuery(String(subQuery)),
             num: 10
         });
