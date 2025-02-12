@@ -49,7 +49,6 @@ interface GenerationResponse {
 const customsearch = google.customsearch('v1');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '');
 
-//#region Helper Functions
 
 function enrichQuery(query: string): string {
     const currentYear = new Date().getFullYear();
@@ -92,12 +91,12 @@ async function decomposeQuery(query: string): Promise<string[]> {
     concise sub-queries for a multi-step search process. Return the list in JSON array format.
     Return ONLY an array of strings, not objects.
     Be attentive to add any year data month or time frame if required in sub query,
-    like if it feels like that would help to improve the accuracy.
+    if it feels like that would help to improve the accuracy.
 
     Query: "${query}"`;
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-001' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const result: GenerationResponse = await model.generateContent(decompositionPrompt);
         let decompositionText = result.response.text();
         decompositionText = decompositionText.replace(/```json\s*|\s*```/g, '').trim();
@@ -119,7 +118,7 @@ async function performSubQuerySearch(subQuery: string): Promise<GoogleSearchItem
             auth: process.env.GOOGLE_API_KEY,
             cx: process.env.GOOGLE_SEARCH_ENGINE_ID,
             q: String(subQuery),
-            num: 5
+            num: 10
         });
 
         const recentResponse = await customsearch.cse.list({
@@ -159,12 +158,12 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
         const { query } = (await req.json()) as SearchRequest;
         console.log('📝 Received query:', query);
 
-        // Step 1: Query Decomposition
+
         console.log('🔄 Starting query decomposition...');
         const subQueries = await decomposeQuery(query);
         console.log("Decomposed sub-queries:", subQueries);
 
-        // Step 2: Intermediate Searches for each sub-query
+
         const subQueryResultsPromises = subQueries.map((subQuery) => performSubQuerySearch(subQuery));
         const subQueryResultsArrays = await Promise.all(subQueryResultsPromises);
         console.log('🔍 Completed intermediate searches for all sub-queries');
@@ -183,7 +182,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
         console.log('✨ Processed and filtered results:', processedResults.length);
 
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-001' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const systemPrompt = `You are a highly intelligent assistant generating comprehensive summaries from search results using a multi-step reasoning process.
 
         Your response must be a valid JSON object with the following structure:
@@ -237,7 +236,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
         let summaryData = generationResult.response.text();
         console.log('🤖 Generated summary data successfully');
 
-        // Clean up the JSON string by removing markdown code block markers
+
         summaryData = summaryData.replace(/```json\s*|\s*```/g, '').trim();
 
         const data: APIResponse = {
