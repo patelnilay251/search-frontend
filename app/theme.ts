@@ -1,6 +1,16 @@
 import { createTheme } from '@mui/material/styles';
 
-const theme = createTheme({
+// Create a base theme with breakpoints and core configurations.
+let theme = createTheme({
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 960,
+      lg: 1280,
+      xl: 1920,
+    },
+  },
   palette: {
     mode: 'dark',
     primary: {
@@ -23,20 +33,25 @@ const theme = createTheme({
     h4: {
       fontWeight: 400,
       letterSpacing: '0.05em',
+      fontSize: '1.5rem',
     },
     h5: {
       fontWeight: 400,
       letterSpacing: '0.05em',
+      fontSize: '1.25rem',
     },
     h6: {
       fontWeight: 400,
       letterSpacing: '0.05em',
+      fontSize: '1.125rem',
     },
     body1: {
       letterSpacing: '0.03em',
+      fontSize: '1rem',
     },
     body2: {
       letterSpacing: '0.03em',
+      fontSize: '0.875rem',
     },
   },
   shape: {
@@ -92,5 +107,49 @@ const theme = createTheme({
   },
 });
 
-export default theme;
+// Extend typography settings with responsive font sizes.
+theme = createTheme(theme, {
+  typography: {
+    h4: {
+      ...theme.typography.h4,
+      [theme.breakpoints.up('sm')]: {
+        fontSize: '1.75rem',
+      },
+      [theme.breakpoints.up('md')]: {
+        fontSize: '2rem',
+      },
+    },
+    h5: {
+      ...theme.typography.h5,
+      [theme.breakpoints.up('sm')]: {
+        fontSize: '1.5rem',
+      },
+      [theme.breakpoints.up('md')]: {
+        fontSize: '1.75rem',
+      },
+    },
+    h6: {
+      ...theme.typography.h6,
+      [theme.breakpoints.up('sm')]: {
+        fontSize: '1.25rem',
+      },
+      [theme.breakpoints.up('md')]: {
+        fontSize: '1.5rem',
+      },
+    },
+    body1: {
+      ...theme.typography.body1,
+      [theme.breakpoints.up('sm')]: {
+        fontSize: '1.125rem',
+      },
+    },
+    body2: {
+      ...theme.typography.body2,
+      [theme.breakpoints.up('sm')]: {
+        fontSize: '1rem',
+      },
+    },
+  },
+});
 
+export default theme;

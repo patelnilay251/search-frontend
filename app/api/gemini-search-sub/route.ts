@@ -275,14 +275,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<PostResponseB
     console.log("========== [POST Handler] Received POST Request ==========");
     try {
         const body = (await req.json()) as PostRequestBody;
-        console.log("---------- [POST Handler] Request Body:", JSON.stringify(body, null, 2));
+        //console.log("---------- [POST Handler] Request Body:", JSON.stringify(body, null, 2));
         const { message, conversationId, summaryData, previousMessages = [] } = body;
 
         const conversationContext = previousMessages
             .slice(-3)
             .map((msg: Message) => `${msg.type}: ${msg.content}`)
             .join('\n');
-        console.log("---------- [POST Handler] Conversation Context:\n", conversationContext);
+        //console.log("---------- [POST Handler] Conversation Context:\n", conversationContext);
 
         console.log("========== [POST Handler] Starting getRelevantSearchResults ==========");
         const { results: searchResults, visualizationData } = await getRelevantSearchResults(
@@ -290,8 +290,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<PostResponseB
             summaryData,
             conversationContext
         );
-        console.log("========== [POST Handler] Search Results:", JSON.stringify(searchResults, null, 2));
-        console.log("========== [POST Handler] Visualization Data:", visualizationData);
+        //console.log("========== [POST Handler] Search Results:", JSON.stringify(searchResults, null, 2));
+        //console.log("========== [POST Handler] Visualization Data:", visualizationData);
 
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const searchContext = searchResults

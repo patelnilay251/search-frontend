@@ -3,10 +3,10 @@
 import React from 'react'
 import { ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import {Box} from '@mui/material'
+import { Box } from '@mui/material'
 import theme from './theme'
 import Sidebar from './components/SideBar'
-import {jetbrainsMono} from './font'
+import { jetbrainsMono } from './font'
 
 const sidebarItems = [
   { text: 'Home', href: '/' },
@@ -22,17 +22,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={jetbrainsMono.className}>
-      {/* <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
-          rel="stylesheet"
-        />
-      </head> */}
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* Add any additional head content here */}
+      </head>
       <body style={{ backgroundColor: '#000000', margin: 0, minHeight: '100vh' }}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <Box sx={{ display: 'flex' }}>
-            <Sidebar items={sidebarItems}/>
+            <Sidebar items={sidebarItems} />
             <Box
               component="main"
               sx={{
@@ -43,10 +41,9 @@ export default function RootLayout({
             >
               {children}
             </Box>
-          </Box>    
+          </Box>
         </ThemeProvider>
       </body>
     </html>
   )
 }
-

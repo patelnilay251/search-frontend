@@ -13,6 +13,8 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material'
 import MinimalistLoader from './Loader'
 import GeminiResults from './GeminiResults'
@@ -20,11 +22,9 @@ import BarChartIcon from '@mui/icons-material/BarChart'
 import ChatIcon from '@mui/icons-material/Chat'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import QueryConveyor from './QueryConveyor'
-//import WeatherWidget from './ui/WeatherWidget'
 import { useRouter } from 'next/navigation'
 import { useConversationStore } from '../store/conversationStore'
 import { v4 as uuidv4 } from 'uuid'
-//import { useSearchParams } from 'next/navigation'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -32,9 +32,9 @@ const containerVariants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.1,
-      duration: 0.5
-    }
-  }
+      duration: 0.5,
+    },
+  },
 }
 
 const itemVariants = {
@@ -43,9 +43,9 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.3
-    }
-  }
+      duration: 0.3,
+    },
+  },
 }
 
 const contentVariants = {
@@ -53,40 +53,103 @@ const contentVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.3
-    }
+    transition: { duration: 0.3 },
   },
   exit: {
     opacity: 0,
     y: 20,
-    transition: {
-      duration: 0.2
-    }
-  }
+    transition: { duration: 0.2 },
+  },
 }
 
 interface Result {
-  title: string;
-  text: string;
-  url: string;
-  score: number;
-  publishedDate: string;
+  title: string
+  text: string
+  url: string
+  score: number
+  publishedDate: string
 }
 
 interface SummaryData {
-  overview: string;
+  overview: string
   keyFindings: {
-    title: string;
-    description: string;
-  }[];
-  conclusion: string;
+    title: string
+    description: string
+  }[]
+  conclusion: string
   metadata: {
-    sourcesUsed: number;
-    timeframe: string;
-    queryContext: string;
-  };
+    sourcesUsed: number
+    timeframe: string
+    queryContext: string
+  }
 }
+
+const MOCK_SUMMARY_DATA: SummaryData = {
+  overview:
+    "Based on the analyzed search results about artificial intelligence in healthcare, there's significant progress in using AI for medical diagnosis, treatment planning, and patient care. The technology shows particular promise in medical imaging, early disease detection, and personalized medicine approaches.",
+  keyFindings: [
+    {
+      title: 'Medical Imaging Advancement',
+      description:
+        'AI algorithms have achieved 95% accuracy in detecting various conditions from X-rays, MRIs, and CT scans, particularly excelling in identifying early-stage cancers and cardiovascular conditions.',
+    },
+    {
+      title: 'Clinical Decision Support',
+      description:
+        'Healthcare providers using AI-powered systems reported a 30% reduction in diagnostic errors and a 25% improvement in treatment plan efficiency across various medical specialties.',
+    },
+    {
+      title: 'Patient Care Optimization',
+      description:
+        'Implementation of AI-driven patient monitoring systems has led to a 40% reduction in emergency response times and a 35% improvement in predicting patient deterioration in intensive care units.',
+    },
+  ],
+  conclusion:
+    'While AI shows tremendous potential in healthcare, successful implementation requires careful consideration of ethical implications, data privacy, and the need for human oversight. The technology serves best as a complement to, rather than replacement for, healthcare professionals.',
+  metadata: {
+    sourcesUsed: 15,
+    timeframe: '2020-2024',
+    queryContext: 'AI Healthcare Applications',
+  },
+}
+
+const MOCK_SEARCH_RESULTS: Result[] = [
+  {
+    title: 'AI in Healthcare: A Comprehensive Review of Current Applications',
+    text: "This systematic review examines the current state of artificial intelligence applications in healthcare, covering diagnostic accuracy, treatment optimization, and patient care management. The study analyzes data from 150 healthcare institutions...",
+    url: 'https://medical-ai-journal.org/comprehensive-review-2024',
+    score: 0.95,
+    publishedDate: '2024-01-15',
+  },
+  {
+    title: 'Machine Learning Models Improve Early Cancer Detection',
+    text: "Researchers at Stanford Medical Center have developed a new AI algorithm that can detect early-stage cancer with 92% accuracy. The system analyzes medical imaging data and patient history to identify potential malignancies...",
+    url: 'https://stanford-research.edu/ai-cancer-detection',
+    score: 0.92,
+    publishedDate: '2023-12-10',
+  },
+  {
+    title: 'Clinical Implementation of AI Decision Support Systems',
+    text: "A multi-center study involving 50 hospitals shows significant improvements in diagnostic accuracy and treatment outcomes when using AI-powered clinical decision support systems. The research demonstrates a 30% reduction in diagnostic errors...",
+    url: 'https://healthcare-innovation.org/ai-implementation',
+    score: 0.88,
+    publishedDate: '2023-11-28',
+  },
+  {
+    title: 'Ethics and Governance of AI in Healthcare',
+    text: "This paper discusses the ethical considerations and governance frameworks necessary for responsible AI implementation in healthcare settings. Topics include data privacy, algorithmic bias, and maintaining human oversight...",
+    url: 'https://bioethics-journal.org/ai-ethics-healthcare',
+    score: 0.85,
+    publishedDate: '2023-10-15',
+  },
+  {
+    title: 'AI-Driven Patient Monitoring Systems',
+    text: "New research highlights the effectiveness of AI-powered patient monitoring systems in intensive care units. The study reports a 40% reduction in emergency response times and improved prediction of patient deterioration...",
+    url: 'https://medical-technology-review.com/patient-monitoring',
+    score: 0.82,
+    publishedDate: '2023-09-20',
+  },
+]
 
 export default function GeminiSearchResults() {
   const [results, setResults] = useState<Result[]>([])
@@ -96,32 +159,27 @@ export default function GeminiSearchResults() {
   const [query, setQuery] = useState('')
   const [searchKey, setSearchKey] = useState(0)
   const [showConveyor, setShowConveyor] = useState(true)
-  //const [showWeather, setShowWeather] = useState(true)
   const [progress, setProgress] = useState(0)
-
-  //const [initialRender, setInitialRender] = useState(true)
-
-  //const searchParams = useSearchParams()
 
   const router = useRouter()
   const { setConversationSummaryData, setConversationId } = useConversationStore()
 
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   useEffect(() => {
     setMounted(true)
     setShowConveyor(true)
-    //setShowWeather(true)
   }, [])
 
   const fetchResults = async (query: string) => {
     setLoading(true)
     setProgress(0)
-    setSearchKey(prevKey => prevKey + 1)
-
+    setSearchKey((prevKey) => prevKey + 1)
 
     try {
       const interval = setInterval(() => {
-        setProgress(prev => {
+        setProgress((prev) => {
           if (prev >= 100) {
             clearInterval(interval)
             return 100
@@ -130,25 +188,11 @@ export default function GeminiSearchResults() {
         })
       }, 300)
 
-      const response = await fetch('/api/gemini-search', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query }),
-      })
+      // Simulate API call delay
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      const parsedSummaryData = typeof data.summaryData === 'string'
-        ? JSON.parse(data.summaryData)
-        : data.summaryData
-      setSummaryData(parsedSummaryData)
-      setResults(data.searchResults || [])
+      setSummaryData(MOCK_SUMMARY_DATA)
+      setResults(MOCK_SEARCH_RESULTS)
     } catch (error) {
       console.error('Error details:', error)
     } finally {
@@ -174,7 +218,6 @@ export default function GeminiSearchResults() {
     }
   }
 
-
   if (!mounted) return null
 
   return (
@@ -182,41 +225,34 @@ export default function GeminiSearchResults() {
       sx={{
         position: 'fixed',
         top: 0,
-        left: 240,
+        left: { xs: '60px', sm: '240px' },
         right: 0,
         bottom: 0,
         border: '1px solid rgba(255, 255, 255, 0.1)',
-        overflow: 'hidden'
+        overflow: 'hidden',
       }}
     >
-      <Box
-        sx={{
-          height: '100%',
-          overflow: 'auto'
-        }}
-      >
-        <Container maxWidth="md" sx={{ py: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+      <Box sx={{ height: '100%', overflow: 'auto' }}>
+        <Container maxWidth="md" sx={{ py: { xs: 2, sm: 4 } }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: { xs: 1, sm: 2 } }}>
             <IconButton
               component="a"
               href="/analytics"
               aria-label="analytics"
               sx={{
                 color: 'white',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                },
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
               }}
             >
               <BarChartIcon />
             </IconButton>
           </Box>
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-          >
-            <Box component="form" onSubmit={handleSearch} sx={{ mb: 6 }}>
+          <motion.div initial="hidden" animate="visible" variants={containerVariants}>
+            <Box
+              component="form"
+              onSubmit={handleSearch}
+              sx={{ mb: { xs: 3, sm: 6 } }}
+            >
               <motion.div variants={itemVariants}>
                 <TextField
                   fullWidth
@@ -224,7 +260,7 @@ export default function GeminiSearchResults() {
                   placeholder="Enter your search query"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  sx={{ mb: 2 }}
+                  sx={{ mb: { xs: 2, sm: 2 } }}
                 />
               </motion.div>
               <motion.div variants={itemVariants}>
@@ -234,14 +270,11 @@ export default function GeminiSearchResults() {
                   disabled={loading}
                   sx={{
                     width: '100%',
-                    height: '50px',
-                    fontSize: '0.875rem',
+                    height: { xs: '45px', sm: '50px' },
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
                     color: 'black',
                     backgroundColor: 'white',
-                    '&:hover': {
-                      backgroundColor: 'black',
-                      color: 'white',
-                    }
+                    '&:hover': { backgroundColor: 'black', color: 'white' },
                   }}
                 >
                   {loading ? 'Searching...' : 'Search'}
@@ -254,7 +287,7 @@ export default function GeminiSearchResults() {
                     justifyContent: 'center',
                     alignItems: 'center',
                     width: '100%',
-                    mt: 10
+                    mt: { xs: 5, sm: 10 },
                   }}
                 >
                   <QueryConveyor width="100%" />
@@ -281,41 +314,44 @@ export default function GeminiSearchResults() {
                   exit="exit"
                 >
                   {summaryData && (
-                    <Box sx={{
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      borderRadius: '4px',
-                      p: 3,
-                      mb: 4,
-                      position: 'relative'
-                    }}>
-                      <Box sx={{ mb: 3 }}>
-                        <Typography variant="h4" gutterBottom sx={{ fontSize: '1.5rem' }}>
+                    <Box
+                      sx={{
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '4px',
+                        p: { xs: 2, sm: 3 },
+                        mb: { xs: 3, sm: 4 },
+                        position: 'relative',
+                      }}
+                    >
+                      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                        <Typography variant="h4" gutterBottom>
                           Overview
                         </Typography>
-                        <Typography variant="body1">{summaryData.overview}</Typography>
+                        <Typography variant="body1">
+                          {summaryData.overview}
+                        </Typography>
                       </Box>
 
-                      <Divider sx={{ my: 2 }} />
+                      <Divider sx={{ my: { xs: 1, sm: 2 } }} />
 
-                      <Box sx={{ mb: 3 }}>
-                        <Typography variant="h5" gutterBottom sx={{ fontSize: '1.25rem' }}>
+                      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                        <Typography variant="h5" gutterBottom>
                           Key Findings
                         </Typography>
-                        {summaryData?.keyFindings?.map((finding, index) => (
+                        {summaryData.keyFindings.map((finding, index) => (
                           <Accordion
                             defaultExpanded
                             key={index}
                             sx={{
                               backgroundColor: 'transparent',
-                              '&:before': {
-                                display: 'none',
-                              }
+                              '&:before': { display: 'none' },
                             }}
                           >
                             <AccordionSummary
                               expandIcon={<ExpandMoreIcon />}
                               sx={{
-                                borderBottom: '1px solid rgba(255, 255, 255, 0.12)'
+                                borderBottom:
+                                  '1px solid rgba(255, 255, 255, 0.12)',
                               }}
                             >
                               <Typography>{finding.title}</Typography>
@@ -327,33 +363,40 @@ export default function GeminiSearchResults() {
                         ))}
                       </Box>
 
-                      <Divider sx={{ my: 2 }} />
+                      <Divider sx={{ my: { xs: 1, sm: 2 } }} />
 
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="h5" gutterBottom sx={{ fontSize: '1.25rem' }}>
+                      <Box sx={{ mb: { xs: 2, sm: 2 } }}>
+                        <Typography variant="h5" gutterBottom>
                           Conclusion
                         </Typography>
-                        <Typography variant="body1">{summaryData.conclusion}</Typography>
+                        <Typography variant="body1">
+                          {summaryData.conclusion}
+                        </Typography>
                       </Box>
 
-                      <Box sx={{
-                        mt: 3,
-                        pt: 2,
-                        borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        fontSize: '0.875rem'
-                      }}>
+                      <Box
+                        sx={{
+                          mt: { xs: 2, sm: 3 },
+                          pt: { xs: 1, sm: 2 },
+                          borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+                          display: 'flex',
+                          flexDirection: { xs: 'column', sm: 'row' },
+                          justifyContent: 'space-between',
+                          alignItems: { xs: 'flex-start', sm: 'center' },
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          gap: { xs: 1, sm: 0 },
+                        }}
+                      >
                         <Typography variant="caption">
-                          Sources: {summaryData?.metadata?.sourcesUsed} •
-                          Timeframe: {summaryData?.metadata?.timeframe}
+                          Sources: {summaryData.metadata.sourcesUsed} • Timeframe:{' '}
+                          {summaryData.metadata.timeframe}
                         </Typography>
                         <IconButton
                           onClick={handleChatClick}
                           sx={{
                             color: 'white',
+                            alignSelf: { xs: 'flex-end', sm: 'center' },
                             '&:hover': {
                               backgroundColor: 'rgba(255, 255, 255, 0.08)',
                             },
@@ -365,9 +408,7 @@ export default function GeminiSearchResults() {
                     </Box>
                   )}
 
-                  {results.length > 0 && (
-                    <GeminiResults results={results} />
-                  )}
+                  {results.length > 0 && <GeminiResults results={results} />}
                 </motion.div>
               )}
             </AnimatePresence>
