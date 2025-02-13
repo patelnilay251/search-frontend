@@ -455,6 +455,7 @@ export default function ConversationPage() {
             py: 4,
             minHeight: '100vh',
             px: { xs: 2, sm: 3 },
+            pb: { xs: '100px', sm: '120px' }  // Add bottom padding to prevent content from being hidden
           }}
         >
           <Box sx={{ maxWidth: '800px' }}>  {/* Removed mx: 'auto' */}
