@@ -18,6 +18,63 @@ import GeographicVisualization from '@/app/components/OutputTypes/GeographicVisu
 import FinancialVisualization from '@/app/components/OutputTypes/FinancialVisualization'
 import WeatherVisualization from '@/app/components/OutputTypes/WeatherVisualization'
 
+// Add this mock data after the imports
+const MOCK_ASSISTANT_RESPONSES: APIMessage[] = [
+  {
+    id: '1',
+    type: 'assistant',
+    content: "Based on the research data, there are several key developments in renewable energy technology [1]. Solar panel efficiency has improved by 30% in the last decade [2], and wind turbine capacity has doubled [3]. The most significant breakthrough has been in energy storage solutions, with new battery technologies showing promising results [4].",
+    citations: [
+      {
+        number: 1,
+        source: "Renewable Energy Journal",
+        url: "renewable-energy-journal.com/article-2024"
+      },
+      {
+        number: 2,
+        source: "Solar Tech Review",
+        url: "solartechreview.org/efficiency-study"
+      },
+      {
+        number: 3,
+        source: "Wind Power Monthly",
+        url: "windpowermonthly.com/capacity-report"
+      },
+      {
+        number: 4,
+        source: "Energy Storage News",
+        url: "energystorage.news/battery-breakthrough"
+      }
+    ],
+    timestamp: new Date().toISOString()
+  },
+  {
+    id: '2',
+    type: 'assistant',
+    content: "Investment in renewable energy reached $500 billion globally in 2023 [1]. The most significant growth was seen in solar and wind sectors, with emerging markets leading the expansion [2]. However, challenges remain in grid integration and storage capacity [3].",
+    citations: [
+      {
+        number: 1,
+        source: "Global Energy Report",
+        url: "globalenergyreport.org/2023"
+      },
+      {
+        number: 2,
+        source: "Emerging Markets Review",
+        url: "emreview.com/renewable-growth"
+      },
+      {
+        number: 3,
+        source: "Power Systems Journal",
+        url: "powersystems.org/challenges"
+      }
+    ],
+    timestamp: new Date().toISOString()
+  }
+];
+
+// ... existing code ...
+
 interface GeographicData {
   coordinates: {
     lat: number;
@@ -115,7 +172,6 @@ interface VisualizationContext {
   description: string
 }
 
-
 interface Citation {
   number: number
   source: string
@@ -132,7 +188,6 @@ interface Message {
   timestamp: string
 }
 
-// Add this interface with the existing interfaces at the top of the file
 interface APIMessage {
   id: string
   type: 'user' | 'assistant'
@@ -146,7 +201,6 @@ interface APIMessage {
   visualizationContext?: VisualizationContext
   timestamp: string
 }
-
 
 const MessageContent = ({ message }: { message: Message }) => {
   const extractCitations = (content: string) => {
@@ -167,7 +221,6 @@ const MessageContent = ({ message }: { message: Message }) => {
       data: message.visualizationData.data as unknown,
       context: message.visualizationContext
     };
-    //console.log('Visualization props:', props);
 
     switch (message.visualizationData.type) {
       case 'geographic':
@@ -266,7 +319,6 @@ const MessageContent = ({ message }: { message: Message }) => {
         </Box>
       )}
 
-      {/* Add visualization after citations */}
       {renderVisualization() && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
@@ -317,35 +369,63 @@ export default function ConversationPage() {
     setMessage('')
     setIsLoading(true)
 
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // try {
+    //   const response = await fetch('/api/gemini-search-sub', {
+    //     method: 'POST',
+    //     credentials: 'include',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({
+    //       message,
+    //       conversationId: id,
+    //       summaryData,
+    //       previousMessages: messages.slice(-3)
+    //     }),
+    //   })
+
+    //   if (!response.ok) throw new Error('Failed to send message')
+
+    //   const data: { messages: APIMessage[] } = await response.json()
+    //   if (data.messages?.length) {
+    //     setMessages(prev => [
+    //       ...prev,
+    //       ...data.messages.map((msg: APIMessage) => ({
+    //         ...msg,
+    //         citations: msg.citations?.map((c) => ({
+    //           ...c,
+    //           url: c.url.startsWith('http') ? c.url : `https://${c.url}`
+    //         }))
+    //       }))
+    //     ])
+    //   }
+    // } catch (error) {
+    //   console.error('Error:', error)
+    // } finally {
+    //   setIsLoading(false)
     try {
-      const response = await fetch('/api/gemini-search-sub', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message,
-          conversationId: id,
-          summaryData,
-          previousMessages: messages.slice(-3)
-        }),
-      })
+      // Use mock data instead of API call
+      const mockResponse = {
+        messages: [
+          MOCK_ASSISTANT_RESPONSES[Math.floor(Math.random() * MOCK_ASSISTANT_RESPONSES.length)]
+        ]
+      };
 
-      if (!response.ok) throw new Error('Failed to send message')
-
-      const data: { messages: APIMessage[] } = await response.json()
-      if (data.messages?.length) {
-        setMessages(prev => [...prev, ...data.messages.map((msg: APIMessage) => ({
+      setMessages(prev => [
+        ...prev,
+        ...mockResponse.messages.map((msg: APIMessage) => ({
           ...msg,
           citations: msg.citations?.map((c) => ({
             ...c,
             url: c.url.startsWith('http') ? c.url : `https://${c.url}`
           }))
-        }))])
-      }
+        }))
+      ]);
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
+
     }
   }
 
@@ -363,19 +443,14 @@ export default function ConversationPage() {
       sx={{
         position: 'fixed',
         top: 0,
-        left: 240,
+        left: { xs: '60px', sm: '240px' },
         right: 0,
         bottom: 0,
         border: 'none',
         overflow: 'hidden'
       }}
     >
-      <Box
-        sx={{
-          height: '100%',
-          overflow: 'auto'
-        }}
-      >
+      <Box sx={{ height: '100%', overflow: 'auto' }}>
         <Container
           maxWidth="lg"
           sx={{
@@ -384,7 +459,7 @@ export default function ConversationPage() {
             px: { xs: 2, sm: 3 },
           }}
         >
-          <Box sx={{ maxWidth: '800px' }}>
+          <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
             <Box sx={{ mb: 4 }}>
               <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'white' }}>
                 {summaryData?.overview}
@@ -432,10 +507,10 @@ export default function ConversationPage() {
                   </Box>
                 </Box>
               )}
-              <div ref={messagesEndRef} /> {/* Add this line */}
+              <div ref={messagesEndRef} />
             </Box>
 
-            <Box sx={{ position: 'sticky', bottom: 20, mt: 4 }}>
+            <Box sx={{ position: 'sticky', bottom: { xs: 10, sm: 20 }, mt: 4 }}>
               <TextField
                 fullWidth
                 variant="outlined"

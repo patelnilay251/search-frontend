@@ -41,11 +41,6 @@ interface FinancialOverview {
     [key: string]: string;
 }
 
-// interface FinancialData {
-//     overview: FinancialOverview;
-//     stockData: StockData[];
-// }
-
 interface FinancialVisualizationProps {
     data: {
         overview: FinancialOverview;
@@ -75,7 +70,6 @@ interface ChartConfig {
 }
 
 const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, context }) => {
-    //const [activeTab, setActiveTab] = useState(0);
     const { overview, stockData } = data;
 
     // Chart configuration state
@@ -85,7 +79,7 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, c
         showVolume: false,
     });
 
-    // Reverse the stock data to ensure chronological order (assuming last element is the latest)
+    // Reverse the stock data to ensure chronological order (assuming the last element is the latest)
     const chartData = [...stockData].reverse();
 
     // Key metrics to display
@@ -134,10 +128,24 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, c
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <Box sx={{ width: '100%', p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 2 }}>
+            <Box
+                sx={{
+                    width: '100%',
+                    p: { xs: 2, sm: 3 },
+                    bgcolor: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: 2
+                }}
+            >
                 {/* Header section */}
-                <Box sx={{ mb: 3 }}>
-                    <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
+                <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            color: 'white',
+                            mb: 1,
+                            fontSize: { xs: '1rem', sm: '1.25rem' }
+                        }}
+                    >
                         {overview.Symbol} - {overview.Name}
                     </Typography>
                     <Grid container spacing={2}>
@@ -151,7 +159,7 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, c
                                     <Paper
                                         elevation={0}
                                         sx={{
-                                            p: 2,
+                                            p: { xs: 1, sm: 2 },
                                             bgcolor: 'rgba(255, 255, 255, 0.07)',
                                             borderRadius: 2,
                                             display: 'flex',
@@ -176,7 +184,15 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, c
                 </Box>
 
                 {/* Chart controls */}
-                <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Box
+                    sx={{
+                        mb: 2,
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: 2,
+                        alignItems: 'center'
+                    }}
+                >
                     <ToggleButtonGroup
                         value={chartConfig.timeRange}
                         exclusive
@@ -207,7 +223,10 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, c
 
                 {/* Price change indicator */}
                 <Box sx={{ mb: 2 }}>
-                    <Typography variant="h4" sx={{ color: 'white' }}>
+                    <Typography
+                        variant="h4"
+                        sx={{ color: 'white', fontSize: { xs: '1.5rem', sm: '2rem' } }}
+                    >
                         ${chartData[chartData.length - 1]?.close.toFixed(2)}
                     </Typography>
                     <Typography
@@ -217,6 +236,7 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, c
                             display: 'flex',
                             alignItems: 'center',
                             gap: 1,
+                            fontSize: { xs: '0.875rem', sm: '1rem' }
                         }}
                     >
                         {change.value >= 0 ? '▲' : '▼'}
@@ -225,7 +245,7 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, c
                 </Box>
 
                 {/* Chart */}
-                <Box sx={{ height: '300px', mt: 3 }}>
+                <Box sx={{ height: { xs: '250px', sm: '300px' }, mt: 3 }}>
                     <ResponsiveContainer width="100%" height="100%">
                         {chartConfig.chartType === 'area' ? (
                             <AreaChart data={chartData}>
@@ -239,10 +259,12 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, c
                                     dataKey="date"
                                     tickFormatter={formatDate}
                                     stroke="rgba(255, 255, 255, 0.5)"
+                                    tick={{ fontSize: 12 }}
                                 />
                                 <YAxis
                                     stroke="rgba(255, 255, 255, 0.5)"
                                     tickFormatter={(value) => `$${value}`}
+                                    tick={{ fontSize: 12 }}
                                 />
                                 <Tooltip
                                     contentStyle={{
@@ -281,7 +303,7 @@ const FinancialVisualization: React.FC<FinancialVisualizationProps> = ({ data, c
                         sx={{
                             mt: 2,
                             color: 'rgba(255, 255, 255, 0.7)',
-                            fontSize: '0.875rem',
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
                             lineHeight: 1.5,
                         }}
                     >

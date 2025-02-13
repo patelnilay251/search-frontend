@@ -181,7 +181,7 @@ const GeographicVisualization: React.FC<GeographicVisualizationProps> = ({
         <Box
           sx={{
             width: "100%",
-            height: "400px",
+            height: { xs: "300px", sm: "400px", md: "500px" },
             borderRadius: 2,
             overflow: "hidden",
             position: "relative",
@@ -193,29 +193,36 @@ const GeographicVisualization: React.FC<GeographicVisualizationProps> = ({
             elevation={3}
             sx={{
               position: "absolute",
-              top: 16,
-              left: 16,
+              top: { xs: 8, sm: 16 },
+              left: { xs: 8, sm: 16 },
               zIndex: 1000,
               backgroundColor: "rgba(0, 0, 0, 0.7)",
               color: "white",
-              p: 2,
-              maxWidth: "300px",
+              p: { xs: 1, sm: 2 },
+              maxWidth: { xs: "250px", sm: "300px" },
               borderRadius: 2,
               backdropFilter: "blur(10px)",
             }}
           >
             <Typography
               variant="subtitle2"
-              sx={{ mb: 1, color: "rgba(255, 255, 255, 0.7)" }}
+              sx={{
+                mb: 1,
+                color: "rgba(255, 255, 255, 0.7)",
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              }}
             >
               Location Details
             </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
+            <Typography
+              variant="body2"
+              sx={{ mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+            >
               {formattedAddress}
             </Typography>
           </Paper>
           {/* Map container */}
-          <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+          <Box ref={mapContainer} sx={{ width: "100%", height: "100%" }} />
         </Box>
       </motion.div>
 
@@ -229,7 +236,7 @@ const GeographicVisualization: React.FC<GeographicVisualizationProps> = ({
           sx={{
             mt: 2,
             color: "rgba(255, 255, 255, 0.7)",
-            fontSize: "0.875rem",
+            fontSize: { xs: "0.75rem", sm: "0.875rem" },
             lineHeight: 1.5,
           }}
         >
