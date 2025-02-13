@@ -21,8 +21,18 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3 }
+    transition: { duration: 0.4, ease: 'easeOut' }
   }
+}
+
+const cardHoverVariants = {
+  initial: { scale: 1, boxShadow: '0px 0px 0px rgba(255, 255, 255, 0)' },
+  hover: {
+    scale: 1.02,
+    boxShadow: '0px 4px 20px rgba(255, 255, 255, 0.1)',
+    transition: { duration: 0.2, ease: 'easeInOut' }
+  },
+  tap: { scale: 0.98 }
 }
 
 const truncateText = (text: string, maxLength: number) => {
@@ -210,10 +220,10 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
                   {results.map((result, index) => (
                     <motion.div
                       key={index}
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="hidden"
+                      variants={cardHoverVariants}
+                      initial="initial"
+                      whileHover="hover"
+                      whileTap="tap"
                     >
                       <ListItem component={Paper} elevation={0} sx={{ p: { xs: 2, sm: 3 } }}>
                         <Box sx={{ width: '100%' }}>
