@@ -16,14 +16,7 @@ interface SearchResultsProps {
   results: Result[];
 }
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' }
-  }
-}
+
 
 const cardHoverVariants = {
   initial: { scale: 1, boxShadow: '0px 0px 0px rgba(255, 255, 255, 0)' },
@@ -51,6 +44,15 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
       setIsLoading(false);
     }, 500); // Adjust this delay as needed
   };
+
+  // const itemVariants = {
+  //   hidden: { opacity: 0, y: 20 },
+  //   visible: {
+  //     opacity: 1,
+  //     y: 0,
+  //     transition: { duration: 0.4, ease: 'easeOut' }
+  //   }
+  // }
 
   return (
     <LayoutGroup>

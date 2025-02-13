@@ -13,8 +13,8 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
-  useTheme,
-  useMediaQuery,
+  // useTheme,
+  // useMediaQuery,
 } from '@mui/material'
 import MinimalistLoader from './Loader'
 import GeminiResults from './GeminiResults'
@@ -164,8 +164,8 @@ export default function GeminiSearchResults() {
   const router = useRouter()
   const { setConversationSummaryData, setConversationId } = useConversationStore()
 
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  //const theme = useTheme()
+  //const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   useEffect(() => {
     setMounted(true)
