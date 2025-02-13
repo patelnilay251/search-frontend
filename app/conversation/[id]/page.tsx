@@ -73,8 +73,6 @@ const MOCK_ASSISTANT_RESPONSES: APIMessage[] = [
   }
 ];
 
-// ... existing code ...
-
 interface GeographicData {
   coordinates: {
     lat: number;
@@ -459,7 +457,7 @@ export default function ConversationPage() {
             px: { xs: 2, sm: 3 },
           }}
         >
-          <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
+          <Box sx={{ maxWidth: '800px' }}>  {/* Removed mx: 'auto' */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'white' }}>
                 {summaryData?.overview}
@@ -510,7 +508,15 @@ export default function ConversationPage() {
               <div ref={messagesEndRef} />
             </Box>
 
-            <Box sx={{ position: 'sticky', bottom: { xs: 10, sm: 20 }, mt: 4 }}>
+            <Box sx={{
+              position: 'fixed',
+              bottom: { xs: 10, sm: 20 },
+              left: { xs: 'calc(60px + 16px)', sm: 'calc(240px + 24px)' },
+              right: { xs: '16px', sm: '24px' },
+              maxWidth: '800px',
+              width: 'calc(100% - 32px)',
+              zIndex: 10
+            }}>
               <TextField
                 fullWidth
                 variant="outlined"
