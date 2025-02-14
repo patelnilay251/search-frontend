@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useConversationStore } from '../../store/conversationStore'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Container,
   Typography,
@@ -17,6 +17,7 @@ import SendIcon from '@mui/icons-material/Send'
 import GeographicVisualization from '@/app/components/OutputTypes/GeographicVisualization'
 import FinancialVisualization from '@/app/components/OutputTypes/FinancialVisualization'
 import WeatherVisualization from '@/app/components/OutputTypes/WeatherVisualization'
+import { relative } from 'path'
 
 // Add this mock data after the imports
 // const MOCK_ASSISTANT_RESPONSES: APIMessage[] = [
@@ -330,12 +331,15 @@ const MessageContent = ({ message }: { message: Message }) => {
 };
 
 export default function ConversationPage() {
+
   const router = useRouter()
   const params = useParams()
   const { summaryData, conversationId } = useConversationStore()
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+
   const messagesEndRef = useRef<null | HTMLDivElement>(null)
   const id = params?.id as string
 
@@ -460,9 +464,73 @@ export default function ConversationPage() {
         >
           <Box sx={{ maxWidth: '800px' }}>  {/* Removed mx: 'auto' */}
             <Box sx={{ mb: 4 }}>
-              <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'white' }}>
+              {/* <Typography variant="h6" component="h1" gutterBottom sx={{
+                color: 'white', fontSize: '0.5rem',
+                lineHeight: 1.5
+              }}>
                 {summaryData?.overview}
-              </Typography>
+              </Typography> */}
+              <Box sx={{ position: 'relative' }}>
+                <AnimatePresence initial={false}>
+                  <motion.div
+                    initial={{ height: 'auto' }}
+                    animate={{
+                      height: isExpanded ?
+                        'auto' : '4.5em'
+                    }}
+                    transition={{
+                      duration: 0.3,
+                      //ease:'easeInOut'
+                    }}
+                    style={{
+                      overflow: 'hidden',
+                    }}>
+                    <Typography
+                      variant="h6"
+                      component="h1"
+                      gutterBottom
+                      sx={{
+                        color: 'white',
+                        fontSize: '0.875rem',
+                        lineHeight: 1.5
+                      }} >
+                      {summaryData?.overview}
+                    </Typography>
+                  </motion.div>
+                </AnimatePresence>
+                {summaryData.overview.length > 400 && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: isExpanded ?
+                        'none' : 'linear-gradient(transparent,rgba(0,0,0,0.8))',
+                      pt: 3,
+                      pb: 1,
+                      display: 'flex',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Typography
+
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      sx={{
+                        color: 'primary.main',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        '&:hover': {
+                          textDecoration: 'underline'
+                        },
+                      }}
+                    >
+                      {isExpanded ? 'Show Less' : 'Read more'}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
             </Box>
 
             <Box>
