@@ -27,18 +27,29 @@ const containerVariants = {
 }
 
 const processTimelineData = (results: Result[]) => {
-  const groupedByDate = results.reduce((acc, result) => {
-    const date = new Date(result.publishedDate).toLocaleDateString();
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Group by year and calculate metrics
+  const yearlyData = results.reduce((acc, result) => {
+    const year = new Date(result.publishedDate).getFullYear();
 
-  return Object.entries(groupedByDate)
-    .map(([date, count]) => ({
-      date,
-      count,
-    }))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    if (!acc[year]) {
+      acc[year] = {
+        year,
+        count: 0,
+        avgScore: 0,
+        totalScore: 0,
+      };
+    }
+
+    acc[year].count += 1;
+    acc[year].totalScore += result.score;
+    acc[year].avgScore = (acc[year].totalScore / acc[year].count) * 100;
+
+    return acc;
+  }, {} as Record<number, any>);
+
+  // Convert to array and sort by year
+  return Object.values(yearlyData)
+    .sort((a, b) => a.year - b.year);
 };
 
 const processRelevanceData = (results: Result[]) => {
@@ -79,25 +90,63 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ results }) => {
       case 'timeline':
         return (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={processTimelineData(results)}>
+            <LineChart
+              data={processTimelineData(results)}
+              margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
-                dataKey="date"
+                dataKey="year"
                 tick={{ fontSize: 12 }}
                 angle={-45}
                 textAnchor="end"
               />
               <YAxis
+                yAxisId="left"
                 label={{ value: 'Number of Results', angle: -90, position: 'insideLeft' }}
               />
-              <Tooltip />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                label={{ value: 'Average Score (%)', angle: 90, position: 'insideRight' }}
+              />
+              <Tooltip content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <Paper sx={{ p: 2, backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
+                      <Typography sx={{ color: '#000' }}>
+                        Year: {payload[0].payload.year}
+                      </Typography>
+                      <Typography sx={{ color: '#8884d8' }}>
+                        Results: {payload[0].payload.count}
+                      </Typography>
+                      <Typography sx={{ color: '#82ca9d' }}>
+                        Avg Score: {payload[0].payload.avgScore.toFixed(1)}%
+                      </Typography>
+                    </Paper>
+                  );
+                }
+                return null;
+              }} />
               <Line
+                yAxisId="left"
                 type="monotone"
                 dataKey="count"
                 stroke="#8884d8"
                 strokeWidth={2}
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
+                name="Number of Results"
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="avgScore"
+                stroke="#82ca9d"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+                name="Average Score"
               />
             </LineChart>
           </ResponsiveContainer>

@@ -49,7 +49,6 @@ interface GenerationResponse {
 const customsearch = google.customsearch('v1');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '');
 
-
 function enrichQuery(query: string): string {
     const currentYear = new Date().getFullYear();
     return `${query} ${currentYear}`;
@@ -75,8 +74,6 @@ function extractDate(result: GoogleSearchItem): string {
     );
     return validDate || new Date().toISOString();
 }
-
-
 
 function extractDomain(url: string): string {
     try {
@@ -140,6 +137,30 @@ async function performSubQuerySearch(subQuery: string): Promise<GoogleSearchItem
     }
 }
 
+function calculateRelevanceScore(result: ProcessedResult, query: string): number {
+    const combinedText = (result.title + ' ' + result.text).toLowerCase();
+    const queryTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+    let matchCount = 0;
+    for (const term of queryTerms) {
+        if (combinedText.includes(term)) {
+            matchCount++;
+        }
+    }
+    const textRelevanceScore = queryTerms.length ? matchCount / queryTerms.length : 0;
+    const domain = result.source.toLowerCase();
+    let urlScore = 0.6;
+    const highQualityTLDs = ['.gov', '.edu', '.org'];
+    if (highQualityTLDs.some(tld => domain.endsWith(tld))) {
+        urlScore = 1.0;
+    } else {
+        const highQualityDomains = ['reuters.com', 'bloomberg.com', 'nytimes.com', 'wsj.com', 'forbes.com', 'techcrunch.com'];
+        if (highQualityDomains.some(d => domain.includes(d))) {
+            urlScore = 1.0;
+        }
+    }
+    const finalScore = (0.7 * textRelevanceScore) + (0.3 * urlScore);
+    return Number(finalScore.toFixed(2));
+}
 
 export async function OPTIONS(): Promise<NextResponse<null>> {
     return NextResponse.json(null, {
@@ -158,11 +179,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
         const { query } = (await req.json()) as SearchRequest;
         console.log('📝 Received query:', query);
 
-
         console.log('🔄 Starting query decomposition...');
         const subQueries = await decomposeQuery(query);
         console.log("Decomposed sub-queries:", subQueries);
-
 
         const subQueryResultsPromises = subQueries.map((subQuery) => performSubQuerySearch(subQuery));
         const subQueryResultsArrays = await Promise.all(subQueryResultsPromises);
@@ -170,17 +189,24 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
         const aggregatedResults = subQueryResultsArrays.flat();
         console.log('📊 Total aggregated results:', aggregatedResults.length);
 
-        const processedResults: ProcessedResult[] = aggregatedResults.map((result): ProcessedResult => ({
-            title: result.title,
-            text: cleanText(result.snippet),
-            url: result.link,
-            publishedDate: extractDate(result),
-            source: extractDomain(result.link),
-            relevanceScore: 0,
-        }));
+        const processedResults: ProcessedResult[] = aggregatedResults.map((result): ProcessedResult => {
+            const title = result.title;
+            const text = cleanText(result.snippet);
+            const url = result.link;
+            const publishedDate = extractDate(result);
+            const source = extractDomain(result.link);
+            const tempResult: ProcessedResult = { title, text, url, publishedDate, source, relevanceScore: 0 };
+            return {
+                title,
+                text,
+                url,
+                publishedDate,
+                source,
+                relevanceScore: calculateRelevanceScore(tempResult, query)
+            };
+        });
 
         console.log('✨ Processed and filtered results:', processedResults.length);
-
 
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const systemPrompt = `You are a highly intelligent assistant generating comprehensive summaries from search results using a multi-step reasoning process.
@@ -236,7 +262,6 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
         let summaryData = generationResult.response.text();
         console.log('🤖 Generated summary data successfully');
 
-
         summaryData = summaryData.replace(/```json\s*|\s*```/g, '').trim();
 
         const data: APIResponse = {
@@ -244,7 +269,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
             summaryData,
             originalQuery: query,
         };
-
+        console.log(data.searchResults);
         return NextResponse.json(data, {
             headers: {
                 'Access-Control-Allow-Origin': 'http://localhost:3000',
