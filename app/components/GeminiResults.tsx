@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
-import { Typography, List, ListItem, Paper, Box, Link, IconButton } from '@mui/material'
+import { Typography, List, ListItem, Paper, Box, Link, IconButton, Button } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import GeminiResultsExpanded from './GeminiResultsExpanded'
@@ -37,28 +37,11 @@ const truncateText = (text: string, maxLength: number) => {
 const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isResultsOpen, setIsResultsOpen] = useState(false)
+  const [isResultsOpen, setIsResultsOpen] = useState(false);
 
   const handleOpen = () => {
-    setIsResultsOpen(true)
-  }
-
-  const toggleExpand = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsExpanded(!isExpanded);
-      setIsLoading(false);
-    }, 500); // Adjust this delay as needed
+    setIsResultsOpen(true);
   };
-
-  // const itemVariants = {
-  //   hidden: { opacity: 0, y: 20 },
-  //   visible: {
-  //     opacity: 1,
-  //     y: 0,
-  //     transition: { duration: 0.4, ease: 'easeOut' }
-  //   }
-  // }
 
   return (
     <LayoutGroup>
@@ -138,68 +121,107 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <Box
-                sx={{
-                  display: 'flex',
-                  overflowX: 'auto',
-                  p: { xs: 1, sm: 2 },
-                  '&::-webkit-scrollbar': { height: '8px' },
-                  '&::-webkit-scrollbar-track': { background: '#1e1e1e' },
-                  '&::-webkit-scrollbar-thumb': {
-                    background: '#888',
-                    borderRadius: '4px',
-                  },
-                  '&::-webkit-scrollbar-thumb:hover': { background: '#555' },
-                }}
-              >
-                {results.slice(0, 15).map((result, index) => (
-                  <motion.div
-                    key={index}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        width: { xs: 150, sm: 200 },
-                        height: { xs: 120, sm: 150 },
-                        m: { xs: 0.5, sm: 1 },
-                        p: { xs: 1, sm: 2 },
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        transition: 'background-color 0.3s',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        },
-                      }}
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    overflowX: 'auto',
+                    p: { xs: 1, sm: 2 },
+                    '&::-webkit-scrollbar': { height: '8px' },
+                    '&::-webkit-scrollbar-track': { background: '#1e1e1e' },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: '#888',
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': { background: '#555' },
+                  }}
+                >
+                  {results.slice(0, 15).map((result, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      <Typography
-                        variant="h6"
-                        component="a"
-                        href={result.url}
-                        target="_blank"
+                      <Paper
+                        elevation={0}
                         sx={{
-                          color: 'primary.main',
-                          textDecoration: 'none',
-                          fontSize: { xs: '0.6rem', sm: '0.7rem' },
-                          fontWeight: 'bold',
-                          '&:hover': { textDecoration: 'underline' },
+                          width: { xs: 150, sm: 200 },
+                          height: { xs: 120, sm: 150 },
+                          m: { xs: 0.5, sm: 1 },
+                          p: { xs: 1, sm: 2 },
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          transition: 'background-color 0.3s',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          },
                         }}
                       >
-                        {truncateText(result.title, 50)}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ fontSize: { xs: '0.5rem', sm: '0.6rem' } }}
-                      >
-                        {truncateText(result.text, 80)}
-                      </Typography>
-                    </Paper>
-                  </motion.div>
-                ))}
+                        <Typography
+                          variant="h6"
+                          component="a"
+                          href={result.url}
+                          target="_blank"
+                          sx={{
+                            color: 'primary.main',
+                            textDecoration: 'none',
+                            fontSize: { xs: '0.6rem', sm: '0.7rem' },
+                            fontWeight: 'bold',
+                            '&:hover': { textDecoration: 'underline' },
+                          }}
+                        >
+                          {truncateText(result.title, 50)}
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ fontSize: { xs: '0.5rem', sm: '0.6rem' } }}
+                        >
+                          {truncateText(result.text, 80)}
+                        </Typography>
+                      </Paper>
+                    </motion.div>
+                  ))}
+                </Box>
+
+                {/* <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  width: '100%',
+                  p: 2,
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '50%',
+                    left: 0,
+                    right: 0,
+                    height: '1px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Button
+                    onClick={handleOpen}
+                    variant="outlined"
+                    size="small"
+                    sx={{
+                      color: 'white',
+                      borderColor: 'rgba(255, 255, 255, 0.12)',
+                      backgroundColor: '#121212',
+                      zIndex: 1,
+                      px: 4,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        borderColor: 'rgba(255, 255, 255, 0.3)',
+                      }
+                    }}
+                  >
+                    Expand Results
+                  </Button>
+                </Box> */}
               </Box>
             </motion.div>
           )}
@@ -321,8 +343,13 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
         </AnimatePresence>
          */}
       </Box>
+      <GeminiResultsExpanded
+        results={results}
+        isOpen={isResultsOpen}
+        onClose={() => setIsResultsOpen(false)}
+      />
     </LayoutGroup>
-  )
-}
+  );
+};
 
-export default GeminiResults
+export default GeminiResults;

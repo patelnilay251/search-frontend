@@ -339,35 +339,14 @@ export default function GeminiSearchResults() {
                   animate="visible"
                   exit="exit"
                 >
-                  {/* <Button onClick={handleOpen} /> */}
-
                   {results.length > 0 && <GeminiResults results={results} />}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'flex-end',
-                    width: '100%',
-                    mt: 2,
-                    mb: 2
-                  }}>
-                    <Button
-                      onClick={handleOpen}
-                      variant="outlined"
-                      sx={{
-                        color: 'white',
-                        borderColor: 'rgba(255, 255, 255, 0.12)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                          borderColor: 'rgba(255, 255, 255, 0.3)',
-                        },
-                        minWidth: '120px'
-                      }}
-                    >
-                      Expand
-                    </Button>
-                  </Box>
-                  {results.length > 0 && <GeminiResultsExpanded results={results}
-                    isOpen={isResultsOpen} onClose={() => setIsResultsOpen(false)} />}
-
+                  {/* Remove the Button and Box wrapper */}
+                  {results.length > 0 && <GeminiResultsExpanded 
+                    results={results}
+                    isOpen={isResultsOpen} 
+                    onClose={() => setIsResultsOpen(false)} 
+                  />}
+                  
                   {summaryData && (
                     <Box
                       sx={{
