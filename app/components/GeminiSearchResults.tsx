@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation'
 import { useConversationStore } from '../store/conversationStore'
 import { v4 as uuidv4 } from 'uuid'
 import AnalyticsDashboard from './AnalyticsDashboard'
+import GeminiResultsExpanded from './GeminiResultsExpanded'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -114,43 +115,43 @@ const MOCK_SUMMARY_DATA: SummaryData = {
   },
 }
 
-// const MOCK_SEARCH_RESULTS: Result[] = [
-//   {
-//     title: 'AI in Healthcare: A Comprehensive Review of Current Applications',
-//     text: "This systematic review examines the current state of artificial intelligence applications in healthcare, covering diagnostic accuracy, treatment optimization, and patient care management. The study analyzes data from 150 healthcare institutions...",
-//     url: 'https://medical-ai-journal.org/comprehensive-review-2024',
-//     score: 0.75,
-//     publishedDate: '2024-01-15',
-//   },
-//   {
-//     title: 'Machine Learning Models Improve Early Cancer Detection',
-//     text: "Researchers at Stanford Medical Center have developed a new AI algorithm that can detect early-stage cancer with 92% accuracy. The system analyzes medical imaging data and patient history to identify potential malignancies...",
-//     url: 'https://stanford-research.edu/ai-cancer-detection',
-//     score: 0.92,
-//     publishedDate: '2020-12-10',
-//   },
-//   {
-//     title: 'Clinical Implementation of AI Decision Support Systems',
-//     text: "A multi-center study involving 50 hospitals shows significant improvements in diagnostic accuracy and treatment outcomes when using AI-powered clinical decision support systems. The research demonstrates a 30% reduction in diagnostic errors...",
-//     url: 'https://healthcare-innovation.org/ai-implementation',
-//     score: 0.68,
-//     publishedDate: '2015-11-28',
-//   },
-//   {
-//     title: 'Ethics and Governance of AI in Healthcare',
-//     text: "This paper discusses the ethical considerations and governance frameworks necessary for responsible AI implementation in healthcare settings. Topics include data privacy, algorithmic bias, and maintaining human oversight...",
-//     url: 'https://bioethics-journal.org/ai-ethics-healthcare',
-//     score: 0.45,
-//     publishedDate: '2007-10-15',
-//   },
-//   {
-//     title: 'AI-Driven Patient Monitoring Systems',
-//     text: "New research highlights the effectiveness of AI-powered patient monitoring systems in intensive care units. The study reports a 40% reduction in emergency response times and improved prediction of patient deterioration...",
-//     url: 'https://medical-technology-review.com/patient-monitoring',
-//     score: 0.52,
-//     publishedDate: '2005-09-20',
-//   },
-// ]
+const MOCK_SEARCH_RESULTS: Result[] = [
+  {
+    title: 'AI in Healthcare: A Comprehensive Review of Current Applications',
+    text: "This systematic review examines the current state of artificial intelligence applications in healthcare, covering diagnostic accuracy, treatment optimization, and patient care management. The study analyzes data from 150 healthcare institutions...",
+    url: 'https://medical-ai-journal.org/comprehensive-review-2024',
+    score: 0.75,
+    publishedDate: '2024-01-15',
+  },
+  {
+    title: 'Machine Learning Models Improve Early Cancer Detection',
+    text: "Researchers at Stanford Medical Center have developed a new AI algorithm that can detect early-stage cancer with 92% accuracy. The system analyzes medical imaging data and patient history to identify potential malignancies...",
+    url: 'https://stanford-research.edu/ai-cancer-detection',
+    score: 0.92,
+    publishedDate: '2020-12-10',
+  },
+  {
+    title: 'Clinical Implementation of AI Decision Support Systems',
+    text: "A multi-center study involving 50 hospitals shows significant improvements in diagnostic accuracy and treatment outcomes when using AI-powered clinical decision support systems. The research demonstrates a 30% reduction in diagnostic errors...",
+    url: 'https://healthcare-innovation.org/ai-implementation',
+    score: 0.68,
+    publishedDate: '2015-11-28',
+  },
+  {
+    title: 'Ethics and Governance of AI in Healthcare',
+    text: "This paper discusses the ethical considerations and governance frameworks necessary for responsible AI implementation in healthcare settings. Topics include data privacy, algorithmic bias, and maintaining human oversight...",
+    url: 'https://bioethics-journal.org/ai-ethics-healthcare',
+    score: 0.45,
+    publishedDate: '2007-10-15',
+  },
+  {
+    title: 'AI-Driven Patient Monitoring Systems',
+    text: "New research highlights the effectiveness of AI-powered patient monitoring systems in intensive care units. The study reports a 40% reduction in emergency response times and improved prediction of patient deterioration...",
+    url: 'https://medical-technology-review.com/patient-monitoring',
+    score: 0.52,
+    publishedDate: '2005-09-20',
+  },
+]
 
 export default function GeminiSearchResults() {
   const [results, setResults] = useState<Result[]>([])
@@ -161,6 +162,7 @@ export default function GeminiSearchResults() {
   const [searchKey, setSearchKey] = useState(0)
   const [showConveyor, setShowConveyor] = useState(true)
   const [progress, setProgress] = useState(0)
+  const [isResultsOpen, setIsResultsOpen] = useState(false)
 
   const router = useRouter()
   const { setConversationSummaryData, setConversationId } = useConversationStore()
@@ -190,29 +192,29 @@ export default function GeminiSearchResults() {
       }, 300)
 
       // Simulate API call delay
-      // await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // setSummaryData(MOCK_SUMMARY_DATA)
-      // setResults(MOCK_SEARCH_RESULTS)
-      const response = await fetch('/api/gemini-search', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query }),
-      })
+      setSummaryData(MOCK_SUMMARY_DATA)
+      setResults(MOCK_SEARCH_RESULTS)
+      // const response = await fetch('/api/gemini-search', {
+      //   method: 'POST',
+      //   credentials: 'include',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({ query }),
+      // })
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      // if (!response.ok) {
+      //   throw new Error(`HTTP error! status: ${response.status}`)
+      // }
 
-      const data = await response.json()
-      const parsedSummaryData = typeof data.summaryData === 'string'
-        ? JSON.parse(data.summaryData)
-        : data.summaryData
-      setSummaryData(parsedSummaryData)
-      setResults(data.searchResults || [])
+      // const data = await response.json()
+      // const parsedSummaryData = typeof data.summaryData === 'string'
+      //   ? JSON.parse(data.summaryData)
+      //   : data.summaryData
+      // setSummaryData(parsedSummaryData)
+      // setResults(data.searchResults || [])
     } catch (error) {
       console.error('Error details:', error)
     } finally {
@@ -238,6 +240,10 @@ export default function GeminiSearchResults() {
     }
   }
 
+  const handleOpen = () => {
+    setIsResultsOpen(true)
+  }
+
   if (!mounted) return null
 
   return (
@@ -254,7 +260,7 @@ export default function GeminiSearchResults() {
     >
       <Box sx={{ height: '100%', overflow: 'auto' }}>
         <Container maxWidth="md" sx={{ py: { xs: 2, sm: 4 } }}>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: { xs: 1, sm: 2 } }}>
+          {/* <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: { xs: 1, sm: 2 } }}>
             <IconButton
               component="a"
               href="/analytics"
@@ -266,7 +272,7 @@ export default function GeminiSearchResults() {
             >
               <BarChartIcon />
             </IconButton>
-          </Box>
+          </Box> */}
           <motion.div initial="hidden" animate="visible" variants={containerVariants}>
             <Box
               component="form"
@@ -333,6 +339,35 @@ export default function GeminiSearchResults() {
                   animate="visible"
                   exit="exit"
                 >
+                  {/* <Button onClick={handleOpen} /> */}
+
+                  {results.length > 0 && <GeminiResults results={results} />}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'flex-end',
+                    width: '100%',
+                    mt: 2,
+                    mb: 2
+                  }}>
+                    <Button
+                      onClick={handleOpen}
+                      variant="outlined"
+                      sx={{
+                        color: 'white',
+                        borderColor: 'rgba(255, 255, 255, 0.12)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          borderColor: 'rgba(255, 255, 255, 0.3)',
+                        },
+                        minWidth: '120px'
+                      }}
+                    >
+                      Expand
+                    </Button>
+                  </Box>
+                  {results.length > 0 && <GeminiResultsExpanded results={results}
+                    isOpen={isResultsOpen} onClose={() => setIsResultsOpen(false)} />}
+
                   {summaryData && (
                     <Box
                       sx={{
@@ -340,6 +375,7 @@ export default function GeminiSearchResults() {
                         borderRadius: '4px',
                         p: { xs: 2, sm: 3 },
                         mb: { xs: 3, sm: 4 },
+                        mt: { xs: 3, sm: 4 },
                         position: 'relative',
                       }}
                     >
@@ -360,7 +396,6 @@ export default function GeminiSearchResults() {
                         </Typography>
                         {summaryData.keyFindings.map((finding, index) => (
                           <Accordion
-                            defaultExpanded
                             key={index}
                             sx={{
                               backgroundColor: 'transparent',
@@ -428,7 +463,7 @@ export default function GeminiSearchResults() {
                     </Box>
                   )}
 
-                  {results.length > 0 && <GeminiResults results={results} />}
+                  {/* {results.length > 0 && <GeminiResults results={results} />} */}
                   {results.length > 0 && <AnalyticsDashboard results={results} />}
 
                 </motion.div>

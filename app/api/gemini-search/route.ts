@@ -31,7 +31,7 @@ interface ProcessedResult {
     url: string;
     publishedDate: string;
     source: string;
-    relevanceScore: number;
+    score: number;
 }
 
 interface APIResponse {
@@ -195,14 +195,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
             const url = result.link;
             const publishedDate = extractDate(result);
             const source = extractDomain(result.link);
-            const tempResult: ProcessedResult = { title, text, url, publishedDate, source, relevanceScore: 0 };
+            const tempResult: ProcessedResult = { title, text, url, publishedDate, source, score: 0 };
             return {
                 title,
                 text,
                 url,
                 publishedDate,
                 source,
-                relevanceScore: calculateRelevanceScore(tempResult, query)
+                score: calculateRelevanceScore(tempResult, query)
             };
         });
 
@@ -269,7 +269,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<APIResponse |
             summaryData,
             originalQuery: query,
         };
-        console.log(data.searchResults);
+        //console.log(data.searchResults);
         return NextResponse.json(data, {
             headers: {
                 'Access-Control-Allow-Origin': 'http://localhost:3000',

@@ -3,6 +3,7 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { Typography, List, ListItem, Paper, Box, Link, IconButton } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import GeminiResultsExpanded from './GeminiResultsExpanded'
 
 interface Result {
   title: string;
@@ -36,6 +37,11 @@ const truncateText = (text: string, maxLength: number) => {
 const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResultsOpen, setIsResultsOpen] = useState(false)
+
+  const handleOpen = () => {
+    setIsResultsOpen(true)
+  }
 
   const toggleExpand = () => {
     setIsLoading(true);
@@ -80,9 +86,12 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
           <Typography variant="h5" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
             Search Results
           </Typography>
-          <IconButton onClick={toggleExpand} sx={{ color: 'white' }} disabled={isLoading}>
+          <IconButton onClick={handleOpen} sx={{ color: 'white' }} disabled={isLoading}>
             {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </IconButton>
+          {/* {results.length > 0 && <GeminiResultsExpanded results={results}
+            isOpen={isResultsOpen} onClose={() => setIsResultsOpen(false)} />} */}
+
         </Box>
 
         {/* Loading Spinner */}
@@ -143,7 +152,7 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
                   '&::-webkit-scrollbar-thumb:hover': { background: '#555' },
                 }}
               >
-                {results.slice(0, 4).map((result, index) => (
+                {results.slice(0, 15).map((result, index) => (
                   <motion.div
                     key={index}
                     whileHover={{ scale: 1.05 }}
@@ -197,7 +206,7 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
         </AnimatePresence>
 
         {/* Expanded View */}
-        <AnimatePresence>
+        {/* <AnimatePresence>
           {isExpanded && !isLoading && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
@@ -310,6 +319,7 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
             </motion.div>
           )}
         </AnimatePresence>
+         */}
       </Box>
     </LayoutGroup>
   )
