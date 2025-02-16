@@ -192,29 +192,29 @@ export default function GeminiSearchResults() {
       }, 300)
 
       // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      setSummaryData(MOCK_SUMMARY_DATA)
-      setResults(MOCK_SEARCH_RESULTS)
-      // const response = await fetch('/api/gemini-search', {
-      //   method: 'POST',
-      //   credentials: 'include',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({ query }),
-      // })
+      // setSummaryData(MOCK_SUMMARY_DATA)
+      // setResults(MOCK_SEARCH_RESULTS)
+      const response = await fetch('/api/gemini-search', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      })
 
-      // if (!response.ok) {
-      //   throw new Error(`HTTP error! status: ${response.status}`)
-      // }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
 
-      // const data = await response.json()
-      // const parsedSummaryData = typeof data.summaryData === 'string'
-      //   ? JSON.parse(data.summaryData)
-      //   : data.summaryData
-      // setSummaryData(parsedSummaryData)
-      // setResults(data.searchResults || [])
+      const data = await response.json()
+      const parsedSummaryData = typeof data.summaryData === 'string'
+        ? JSON.parse(data.summaryData)
+        : data.summaryData
+      setSummaryData(parsedSummaryData)
+      setResults(data.searchResults || [])
     } catch (error) {
       console.error('Error details:', error)
     } finally {
@@ -341,12 +341,12 @@ export default function GeminiSearchResults() {
                 >
                   {results.length > 0 && <GeminiResults results={results} />}
                   {/* Remove the Button and Box wrapper */}
-                  {results.length > 0 && <GeminiResultsExpanded 
+                  {results.length > 0 && <GeminiResultsExpanded
                     results={results}
-                    isOpen={isResultsOpen} 
-                    onClose={() => setIsResultsOpen(false)} 
+                    isOpen={isResultsOpen}
+                    onClose={() => setIsResultsOpen(false)}
                   />}
-                  
+
                   {summaryData && (
                     <Box
                       sx={{

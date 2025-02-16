@@ -308,6 +308,16 @@ const truncateText = (text: string, maxLength: number) => {
     return text.substr(0, maxLength) + '...'
 }
 
+// Add this utility function at the top level
+const getDomainFromUrl = (url: string) => {
+    try {
+        const domain = new URL(url).hostname.replace('www.', '');
+        return domain;
+    } catch {
+        return url;
+    }
+};
+
 const GeminiResultsExpanded: React.FC<GeminiResultsPopupProps> = ({ results, isOpen, onClose }) => {
     const [isExpanded, setIsExpanded] = useState(true)
     const [isLoading, setIsLoading] = useState(false)
@@ -459,76 +469,73 @@ const GeminiResultsExpanded: React.FC<GeminiResultsPopupProps> = ({ results, isO
                                                             whileHover="hover"
                                                             whileTap="tap"
                                                         >
-                                                            <ListItem component={Paper} elevation={0} sx={{ p: { xs: 2, sm: 3 } }}>
+                                                            <ListItem 
+                                                                component={Paper} 
+                                                                elevation={0} 
+                                                                sx={{ 
+                                                                    p: { xs: 1.5, sm: 2 },
+                                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                                    '&:hover': {
+                                                                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                                                    },
+                                                                }}
+                                                            >
                                                                 <Box sx={{ width: '100%' }}>
-                                                                    <Box
-                                                                        sx={{
-                                                                            display: 'flex',
-                                                                            justifyContent: 'space-between',
-                                                                            alignItems: 'center',
-                                                                            mb: { xs: 1, sm: 2 },
-                                                                        }}
-                                                                    >
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                                        <img
+                                                                            src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(result.url)}`}
+                                                                            alt=""
+                                                                            style={{ width: 16, height: 16 }}
+                                                                        />
                                                                         <Typography
-                                                                            variant="h6"
-                                                                            component="a"
-                                                                            href={result.url}
-                                                                            target="_blank"
+                                                                            variant="caption"
                                                                             sx={{
-                                                                                color: 'primary.main',
-                                                                                textDecoration: 'none',
-                                                                                fontSize: { xs: '0.9rem', sm: '1rem' },
-                                                                                '&:hover': { textDecoration: 'underline' },
+                                                                                color: 'text.secondary',
+                                                                                fontSize: { xs: '0.6rem', sm: '0.7rem' },
                                                                             }}
                                                                         >
-                                                                            {result.title}
+                                                                            {getDomainFromUrl(result.url)}
                                                                         </Typography>
-                                                                        <Typography variant="caption" color="text.secondary" sx={{ ml: { xs: 1, sm: 2 } }}>
+                                                                        <Typography 
+                                                                            variant="caption" 
+                                                                            color="text.secondary" 
+                                                                            sx={{ ml: 'auto' }}
+                                                                        >
                                                                             {(result.score * 100).toFixed(2)}%
                                                                         </Typography>
                                                                     </Box>
+                                                                    
                                                                     <Typography
-                                                                        variant="caption"
-                                                                        component="div"
-                                                                        color="text.secondary"
-                                                                        sx={{ mb: { xs: 0.5, sm: 1 }, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                                                                        variant="h6"
+                                                                        component="a"
+                                                                        href={result.url}
+                                                                        target="_blank"
+                                                                        sx={{
+                                                                            color: 'primary.main',
+                                                                            textDecoration: 'none',
+                                                                            fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                                                                            fontWeight: 'bold',
+                                                                            display: 'block',
+                                                                            mb: 1,
+                                                                            '&:hover': { textDecoration: 'underline' },
+                                                                        }}
                                                                     >
-                                                                        {result.url}
+                                                                        {result.title}
                                                                     </Typography>
+                                                            
                                                                     {result.publishedDate && (
                                                                         <Typography
                                                                             variant="caption"
                                                                             component="div"
                                                                             color="text.secondary"
-                                                                            sx={{ mb: { xs: 0.5, sm: 1 }, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                                                                            sx={{ 
+                                                                                fontSize: { xs: '0.6rem', sm: '0.7rem' },
+                                                                                opacity: 0.7 
+                                                                            }}
                                                                         >
                                                                             {new Date(result.publishedDate).toLocaleDateString()}
                                                                         </Typography>
                                                                     )}
-                                                                    <Typography
-                                                                        variant="body2"
-                                                                        color="text.secondary"
-                                                                        sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}
-                                                                    >
-                                                                        {truncateText(result.text, 150)}
-                                                                        {result.text.length > 150 && (
-                                                                            <Link
-                                                                                href="#"
-                                                                                onClick={(e) => {
-                                                                                    e.preventDefault()
-                                                                                    console.log('Read more clicked for result:', index)
-                                                                                }}
-                                                                                sx={{
-                                                                                    ml: { xs: 0.5, sm: 1 },
-                                                                                    color: 'primary.main',
-                                                                                    textDecoration: 'none',
-                                                                                    '&:hover': { textDecoration: 'underline' },
-                                                                                }}
-                                                                            >
-                                                                                Read more
-                                                                            </Link>
-                                                                        )}
-                                                                    </Typography>
                                                                 </Box>
                                                             </ListItem>
                                                         </motion.div>
