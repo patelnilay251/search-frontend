@@ -13,8 +13,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
-  // useTheme,
-  // useMediaQuery,
+  Skeleton,
 } from '@mui/material'
 import MinimalistLoader from './Loader'
 import GeminiResults from './GeminiResults'
@@ -63,6 +62,92 @@ const contentVariants = {
     transition: { duration: 0.2 },
   },
 }
+
+// ... existing code ...
+
+// Add these animation variants near your other variants
+const skeletonVariants = {
+  hidden: {
+    opacity: 0,
+    y: 20,
+    scale: 0.98
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15,
+      duration: 0.6
+    }
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    scale: 0.98,
+    transition: {
+      duration: 0.4,
+      ease: [0.4, 0, 0.2, 1]
+    }
+  }
+}
+
+const contentVariantsTwo = {
+  hidden: {
+    opacity: 0,
+    y: 20,
+    scale: 0.98
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15,
+      duration: 0.6,
+      staggerChildren: 0.1
+    }
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    scale: 0.98,
+    transition: {
+      duration: 0.4,
+      ease: [0.4, 0, 0.2, 1]
+    }
+  }
+}
+
+// Update the skeleton motion.div
+{/* <motion.div
+  key="skeleton"
+  variants={skeletonVariants}
+  initial="hidden"
+  animate="visible"
+  exit="exit"
+  style={{ 
+    transformOrigin: 'center top',
+    willChange: 'transform, opacity'
+  }}
+>
+
+// Update the content motion.div
+<motion.div
+  key="content"
+  variants={contentVariants}
+  initial="hidden"
+  animate="visible"
+  exit="exit"
+  style={{ 
+    transformOrigin: 'center top',
+    willChange: 'transform, opacity'
+  }}
+></motion.div> */}
 
 interface Result {
   title: string
@@ -123,34 +208,7 @@ const MOCK_SEARCH_RESULTS: Result[] = [
     score: 0.75,
     publishedDate: '2024-01-15',
   },
-  {
-    title: 'Machine Learning Models Improve Early Cancer Detection',
-    text: "Researchers at Stanford Medical Center have developed a new AI algorithm that can detect early-stage cancer with 92% accuracy. The system analyzes medical imaging data and patient history to identify potential malignancies...",
-    url: 'https://stanford-research.edu/ai-cancer-detection',
-    score: 0.92,
-    publishedDate: '2020-12-10',
-  },
-  {
-    title: 'Clinical Implementation of AI Decision Support Systems',
-    text: "A multi-center study involving 50 hospitals shows significant improvements in diagnostic accuracy and treatment outcomes when using AI-powered clinical decision support systems. The research demonstrates a 30% reduction in diagnostic errors...",
-    url: 'https://healthcare-innovation.org/ai-implementation',
-    score: 0.68,
-    publishedDate: '2015-11-28',
-  },
-  {
-    title: 'Ethics and Governance of AI in Healthcare',
-    text: "This paper discusses the ethical considerations and governance frameworks necessary for responsible AI implementation in healthcare settings. Topics include data privacy, algorithmic bias, and maintaining human oversight...",
-    url: 'https://bioethics-journal.org/ai-ethics-healthcare',
-    score: 0.45,
-    publishedDate: '2007-10-15',
-  },
-  {
-    title: 'AI-Driven Patient Monitoring Systems',
-    text: "New research highlights the effectiveness of AI-powered patient monitoring systems in intensive care units. The study reports a 40% reduction in emergency response times and improved prediction of patient deterioration...",
-    url: 'https://medical-technology-review.com/patient-monitoring',
-    score: 0.52,
-    publishedDate: '2005-09-20',
-  },
+  // ... add other mock results as needed
 ]
 
 export default function GeminiSearchResults() {
@@ -163,12 +221,11 @@ export default function GeminiSearchResults() {
   const [showConveyor, setShowConveyor] = useState(true)
   const [progress, setProgress] = useState(0)
   const [isResultsOpen, setIsResultsOpen] = useState(false)
+  // New state for content skeleton loading
+  const [contentLoading, setContentLoading] = useState(false)
 
   const router = useRouter()
   const { setConversationSummaryData, setConversationId } = useConversationStore()
-
-  //const theme = useTheme()
-  //const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   useEffect(() => {
     setMounted(true)
@@ -177,6 +234,7 @@ export default function GeminiSearchResults() {
 
   const fetchResults = async (query: string) => {
     setLoading(true)
+    setContentLoading(true)
     setProgress(0)
     setSearchKey((prevKey) => prevKey + 1)
 
@@ -191,35 +249,21 @@ export default function GeminiSearchResults() {
         })
       }, 300)
 
-      // Simulate API call delay
-      // await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Simulate a longer API call delay (3 seconds)
+      await new Promise((resolve) => setTimeout(resolve, 3000))
 
-      // setSummaryData(MOCK_SUMMARY_DATA)
-      // setResults(MOCK_SEARCH_RESULTS)
-      const response = await fetch('/api/gemini-search', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      const parsedSummaryData = typeof data.summaryData === 'string'
-        ? JSON.parse(data.summaryData)
-        : data.summaryData
-      setSummaryData(parsedSummaryData)
-      setResults(data.searchResults || [])
+      // Set your data here
+      setSummaryData(MOCK_SUMMARY_DATA)
+      setResults(MOCK_SEARCH_RESULTS)
     } catch (error) {
       console.error('Error details:', error)
     } finally {
       setProgress(100)
       setLoading(false)
+      // Hold skeleton for an extra second for smoother transition
+      setTimeout(() => {
+        setContentLoading(false)
+      }, 1000)
     }
   }
 
@@ -240,10 +284,6 @@ export default function GeminiSearchResults() {
     }
   }
 
-  const handleOpen = () => {
-    setIsResultsOpen(true)
-  }
-
   if (!mounted) return null
 
   return (
@@ -260,25 +300,8 @@ export default function GeminiSearchResults() {
     >
       <Box sx={{ height: '100%', overflow: 'auto' }}>
         <Container maxWidth="md" sx={{ py: { xs: 2, sm: 4 } }}>
-          {/* <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: { xs: 1, sm: 2 } }}>
-            <IconButton
-              component="a"
-              href="/analytics"
-              aria-label="analytics"
-              sx={{
-                color: 'white',
-                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
-              }}
-            >
-              <BarChartIcon />
-            </IconButton>
-          </Box> */}
           <motion.div initial="hidden" animate="visible" variants={containerVariants}>
-            <Box
-              component="form"
-              onSubmit={handleSearch}
-              sx={{ mb: { xs: 3, sm: 6 } }}
-            >
+            <Box component="form" onSubmit={handleSearch} sx={{ mb: { xs: 3, sm: 6 } }}>
               <motion.div variants={itemVariants}>
                 <TextField
                   fullWidth
@@ -339,112 +362,154 @@ export default function GeminiSearchResults() {
                   animate="visible"
                   exit="exit"
                 >
-                  {results.length > 0 && <GeminiResults results={results} />}
-                  {/* Remove the Button and Box wrapper */}
-                  {results.length > 0 && <GeminiResultsExpanded
-                    results={results}
-                    isOpen={isResultsOpen}
-                    onClose={() => setIsResultsOpen(false)}
-                  />}
-
-                  {summaryData && (
-                    <Box
-                      sx={{
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
-                        borderRadius: '4px',
-                        p: { xs: 2, sm: 3 },
-                        mb: { xs: 3, sm: 4 },
-                        mt: { xs: 3, sm: 4 },
-                        position: 'relative',
-                      }}
-                    >
-                      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-                        <Typography variant="h4" gutterBottom>
-                          Overview
-                        </Typography>
-                        <Typography variant="body1">
-                          {summaryData.overview}
-                        </Typography>
-                      </Box>
-
-                      <Divider sx={{ my: { xs: 1, sm: 2 } }} />
-
-                      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-                        <Typography variant="h5" gutterBottom>
-                          Key Findings
-                        </Typography>
-                        {summaryData.keyFindings.map((finding, index) => (
-                          <Accordion
-                            key={index}
-                            sx={{
-                              backgroundColor: 'transparent',
-                              '&:before': { display: 'none' },
-                            }}
-                          >
-                            <AccordionSummary
-                              expandIcon={<ExpandMoreIcon />}
-                              sx={{
-                                borderBottom:
-                                  '1px solid rgba(255, 255, 255, 0.12)',
-                              }}
-                            >
-                              <Typography>{finding.title}</Typography>
-                            </AccordionSummary>
-                            <AccordionDetails>
-                              <Typography>{finding.description}</Typography>
-                            </AccordionDetails>
-                          </Accordion>
-                        ))}
-                      </Box>
-
-                      <Divider sx={{ my: { xs: 1, sm: 2 } }} />
-
-                      <Box sx={{ mb: { xs: 2, sm: 2 } }}>
-                        <Typography variant="h5" gutterBottom>
-                          Conclusion
-                        </Typography>
-                        <Typography variant="body1">
-                          {summaryData.conclusion}
-                        </Typography>
-                      </Box>
-
-                      <Box
-                        sx={{
-                          mt: { xs: 2, sm: 3 },
-                          pt: { xs: 1, sm: 2 },
-                          borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-                          display: 'flex',
-                          flexDirection: { xs: 'column', sm: 'row' },
-                          justifyContent: 'space-between',
-                          alignItems: { xs: 'flex-start', sm: 'center' },
-                          color: 'rgba(255, 255, 255, 0.7)',
-                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                          gap: { xs: 1, sm: 0 },
+                  <AnimatePresence mode="wait">
+                    {contentLoading ? (
+                      <motion.div
+                        key="skeleton"
+                        variants={skeletonVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        style={{
+                          transformOrigin: 'center top',
+                          willChange: 'transform, opacity'
                         }}
                       >
-                        <Typography variant="caption">
-                          Sources: {summaryData.metadata.sourcesUsed} • Timeframe:{' '}
-                          {summaryData.metadata.timeframe}
-                        </Typography>
-                        <IconButton
-                          onClick={handleChatClick}
-                          sx={{
-                            color: 'white',
-                            alignSelf: { xs: 'flex-end', sm: 'center' },
-                            '&:hover': {
-                              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                            },
-                          }}
-                        >
-                          <ChatIcon />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                  )}
+                        <Box>
+                          <Skeleton variant="text" width="40%" height={40} sx={{ mb: 2 }} />
+                          <Skeleton variant="rectangular" height={100} sx={{ mb: 3 }} />
+                          <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
+                          {[...Array(3)].map((_, index) => (
+                            <Box key={index} sx={{ mb: 2 }}>
+                              <Skeleton variant="text" width="50%" height={30} />
+                              <Skeleton variant="rectangular" height={60} sx={{ my: 1 }} />
+                            </Box>
+                          ))}
+                          <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
+                          <Skeleton variant="rectangular" height={80} sx={{ mb: 2 }} />
+                        </Box>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="content"
+                        variants={contentVariantsTwo}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        style={{
+                          transformOrigin: 'center top',
+                          willChange: 'transform, opacity'
+                        }}
+                      >
+                        <>
+                          {results.length > 0 && <GeminiResults results={results} />}
+                          {results.length > 0 && (
+                            <GeminiResultsExpanded
+                              results={results}
+                              isOpen={isResultsOpen}
+                              onClose={() => setIsResultsOpen(false)}
+                            />
+                          )}
 
-                  {/* {results.length > 0 && <GeminiResults results={results} />} */}
-                  {results.length > 0 && <AnalyticsDashboard results={results} />}
+                          {summaryData && (
+                            <Box
+                              sx={{
+                                border: '1px solid rgba(255, 255, 255, 0.12)',
+                                borderRadius: '4px',
+                                p: { xs: 2, sm: 3 },
+                                mb: { xs: 3, sm: 4 },
+                                mt: { xs: 3, sm: 4 },
+                                position: 'relative',
+                              }}
+                            >
+                              <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                                <Typography variant="h4" gutterBottom>
+                                  Overview
+                                </Typography>
+                                <Typography variant="body1">
+                                  {summaryData.overview}
+                                </Typography>
+                              </Box>
 
+                              <Divider sx={{ my: { xs: 1, sm: 2 } }} />
+
+                              <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                                <Typography variant="h5" gutterBottom>
+                                  Key Findings
+                                </Typography>
+                                {summaryData.keyFindings.map((finding, index) => (
+                                  <Accordion
+                                    key={index}
+                                    sx={{
+                                      backgroundColor: 'transparent',
+                                      '&:before': { display: 'none' },
+                                    }}
+                                  >
+                                    <AccordionSummary
+                                      expandIcon={<ExpandMoreIcon />}
+                                      sx={{
+                                        borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+                                      }}
+                                    >
+                                      <Typography>{finding.title}</Typography>
+                                    </AccordionSummary>
+                                    <AccordionDetails>
+                                      <Typography>{finding.description}</Typography>
+                                    </AccordionDetails>
+                                  </Accordion>
+                                ))}
+                              </Box>
+
+                              <Divider sx={{ my: { xs: 1, sm: 2 } }} />
+
+                              <Box sx={{ mb: { xs: 2, sm: 2 } }}>
+                                <Typography variant="h5" gutterBottom>
+                                  Conclusion
+                                </Typography>
+                                <Typography variant="body1">
+                                  {summaryData.conclusion}
+                                </Typography>
+                              </Box>
+
+                              <Box
+                                sx={{
+                                  mt: { xs: 2, sm: 3 },
+                                  pt: { xs: 1, sm: 2 },
+                                  borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+                                  display: 'flex',
+                                  flexDirection: { xs: 'column', sm: 'row' },
+                                  justifyContent: 'space-between',
+                                  alignItems: { xs: 'flex-start', sm: 'center' },
+                                  color: 'rgba(255, 255, 255, 0.7)',
+                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                  gap: { xs: 1, sm: 0 },
+                                }}
+                              >
+                                <Typography variant="caption">
+                                  Sources: {summaryData.metadata.sourcesUsed} • Timeframe:{' '}
+                                  {summaryData.metadata.timeframe}
+                                </Typography>
+                                <IconButton
+                                  onClick={handleChatClick}
+                                  sx={{
+                                    color: 'white',
+                                    alignSelf: { xs: 'flex-end', sm: 'center' },
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                    },
+                                  }}
+                                >
+                                  <ChatIcon />
+                                </IconButton>
+                              </Box>
+                            </Box>
+                          )}
+
+                          {results.length > 0 && <AnalyticsDashboard results={results} />}
+                        </>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               )}
             </AnimatePresence>
