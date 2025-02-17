@@ -13,7 +13,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
-  Skeleton,
+  Skeleton, // <-- ensure Skeleton is imported
 } from '@mui/material'
 import MinimalistLoader from './Loader'
 import GeminiResults from './GeminiResults'
@@ -62,92 +62,6 @@ const contentVariants = {
     transition: { duration: 0.2 },
   },
 }
-
-// ... existing code ...
-
-// Add these animation variants near your other variants
-const skeletonVariants = {
-  hidden: {
-    opacity: 0,
-    y: 20,
-    scale: 0.98
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 15,
-      duration: 0.6
-    }
-  },
-  exit: {
-    opacity: 0,
-    y: -20,
-    scale: 0.98,
-    transition: {
-      duration: 0.4,
-      ease: [0.4, 0, 0.2, 1]
-    }
-  }
-}
-
-const contentVariantsTwo = {
-  hidden: {
-    opacity: 0,
-    y: 20,
-    scale: 0.98
-  },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 15,
-      duration: 0.6,
-      staggerChildren: 0.1
-    }
-  },
-  exit: {
-    opacity: 0,
-    y: -20,
-    scale: 0.98,
-    transition: {
-      duration: 0.4,
-      ease: [0.4, 0, 0.2, 1]
-    }
-  }
-}
-
-// Update the skeleton motion.div
-{/* <motion.div
-  key="skeleton"
-  variants={skeletonVariants}
-  initial="hidden"
-  animate="visible"
-  exit="exit"
-  style={{ 
-    transformOrigin: 'center top',
-    willChange: 'transform, opacity'
-  }}
->
-
-// Update the content motion.div
-<motion.div
-  key="content"
-  variants={contentVariants}
-  initial="hidden"
-  animate="visible"
-  exit="exit"
-  style={{ 
-    transformOrigin: 'center top',
-    willChange: 'transform, opacity'
-  }}
-></motion.div> */}
 
 interface Result {
   title: string
@@ -205,10 +119,72 @@ const MOCK_SEARCH_RESULTS: Result[] = [
     title: 'AI in Healthcare: A Comprehensive Review of Current Applications',
     text: "This systematic review examines the current state of artificial intelligence applications in healthcare, covering diagnostic accuracy, treatment optimization, and patient care management. The study analyzes data from 150 healthcare institutions...",
     url: 'https://medical-ai-journal.org/comprehensive-review-2024',
-    score: 0.75,
+    score: 0.95,
     publishedDate: '2024-01-15',
   },
-  // ... add other mock results as needed
+  {
+    title: 'Machine Learning Models Improve Early Cancer Detection',
+    text: "Stanford researchers have developed a new AI algorithm achieving 92% accuracy in early-stage cancer detection. The system combines imaging analysis with patient history data to identify potential malignancies before traditional screening methods...",
+    url: 'https://stanford-research.edu/ai-cancer-detection',
+    score: 0.92,
+    publishedDate: '2023-12-10',
+  },
+  {
+    title: 'AI-Powered Drug Discovery Platform Shows Promise',
+    text: "A breakthrough in pharmaceutical research as AI platform successfully predicts molecular behaviors and drug interactions with 89% accuracy. The system has already identified three potential candidates for treating resistant bacterial infections...",
+    url: 'https://pharma-innovation.org/ai-drug-discovery',
+    score: 0.88,
+    publishedDate: '2023-11-28',
+  },
+  {
+    title: 'Neural Networks Revolutionize Medical Imaging Analysis',
+    text: "Deep learning algorithms now match or exceed radiologist performance in detecting abnormalities across various imaging modalities. The study covering 50,000 cases shows a 40% reduction in false positives while maintaining 95% sensitivity...",
+    url: 'https://radiology-ai.edu/neural-networks',
+    score: 0.87,
+    publishedDate: '2023-10-15',
+  },
+  {
+    title: 'AI in Emergency Medicine: Real-time Decision Support',
+    text: "Implementation of AI-driven triage systems in emergency departments has led to a 35% improvement in patient prioritization accuracy and reduced wait times for critical cases by 28%. The system processes vital signs and symptoms in real-time...",
+    url: 'https://emergency-med.org/ai-triage',
+    score: 0.85,
+    publishedDate: '2023-09-20',
+  },
+  {
+    title: 'Predictive Analytics in Patient Care Management',
+    text: "Healthcare facilities using AI-powered predictive analytics report a 45% reduction in hospital readmissions. The system identifies high-risk patients and recommends preventive interventions based on comprehensive health data analysis...",
+    url: 'https://healthcare-analytics.com/predictive-care',
+    score: 0.82,
+    publishedDate: '2023-08-05',
+  },
+  {
+    title: 'AI Ethics in Healthcare: Ensuring Responsible Implementation',
+    text: "New framework addresses ethical considerations in healthcare AI deployment, focusing on data privacy, algorithmic bias, and patient autonomy. Guidelines developed through collaboration with medical ethicists and AI researchers...",
+    url: 'https://medical-ethics.org/ai-guidelines',
+    score: 0.78,
+    publishedDate: '2023-07-12',
+  },
+  {
+    title: 'Personalized Medicine Through AI Analysis',
+    text: "AI algorithms now enable truly personalized treatment plans by analyzing individual genetic profiles, medical history, and lifestyle factors. Clinical trials show 30% better outcomes compared to standard treatment protocols...",
+    url: 'https://precision-medicine.net/ai-personalization',
+    score: 0.75,
+    publishedDate: '2023-06-28',
+  },
+  {
+    title: 'Mental Health Diagnosis Enhanced by AI',
+    text: "Natural language processing algorithms achieve 85% accuracy in early detection of mental health conditions through analysis of patient communications. The system helps identify subtle patterns indicating potential psychological concerns...",
+    url: 'https://mental-health-tech.org/ai-diagnosis',
+    score: 0.72,
+    publishedDate: '2023-05-15',
+  },
+  {
+    title: 'AI-Assisted Surgical Planning and Navigation',
+    text: "Robotic surgery systems enhanced with AI show 50% reduction in planning time and 25% improvement in precision. The technology provides real-time guidance and adapts to anatomical variations during procedures...",
+    url: 'https://surgical-innovation.com/ai-surgery',
+    score: 0.70,
+    publishedDate: '2023-04-03',
+  }
 ]
 
 export default function GeminiSearchResults() {
@@ -221,7 +197,7 @@ export default function GeminiSearchResults() {
   const [showConveyor, setShowConveyor] = useState(true)
   const [progress, setProgress] = useState(0)
   const [isResultsOpen, setIsResultsOpen] = useState(false)
-  // New state for content skeleton loading
+  // New state for showing skeleton placeholders for content
   const [contentLoading, setContentLoading] = useState(false)
 
   const router = useRouter()
@@ -234,7 +210,7 @@ export default function GeminiSearchResults() {
 
   const fetchResults = async (query: string) => {
     setLoading(true)
-    setContentLoading(true)
+    setContentLoading(true) // show skeletons after loader completes
     setProgress(0)
     setSearchKey((prevKey) => prevKey + 1)
 
@@ -252,7 +228,7 @@ export default function GeminiSearchResults() {
       // Simulate a longer API call delay (3 seconds)
       await new Promise((resolve) => setTimeout(resolve, 3000))
 
-      // Set your data here
+      // After API call, set your data
       setSummaryData(MOCK_SUMMARY_DATA)
       setResults(MOCK_SEARCH_RESULTS)
     } catch (error) {
@@ -260,7 +236,7 @@ export default function GeminiSearchResults() {
     } finally {
       setProgress(100)
       setLoading(false)
-      // Hold skeleton for an extra second for smoother transition
+      // Keep skeletons visible for an extra second for a smooth transition
       setTimeout(() => {
         setContentLoading(false)
       }, 1000)
@@ -362,154 +338,133 @@ export default function GeminiSearchResults() {
                   animate="visible"
                   exit="exit"
                 >
-                  <AnimatePresence mode="wait">
-                    {contentLoading ? (
-                      <motion.div
-                        key="skeleton"
-                        variants={skeletonVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        style={{
-                          transformOrigin: 'center top',
-                          willChange: 'transform, opacity'
-                        }}
-                      >
-                        <Box>
-                          <Skeleton variant="text" width="40%" height={40} sx={{ mb: 2 }} />
-                          <Skeleton variant="rectangular" height={100} sx={{ mb: 3 }} />
-                          <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
-                          {[...Array(3)].map((_, index) => (
-                            <Box key={index} sx={{ mb: 2 }}>
-                              <Skeleton variant="text" width="50%" height={30} />
-                              <Skeleton variant="rectangular" height={60} sx={{ my: 1 }} />
-                            </Box>
-                          ))}
-                          <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
-                          <Skeleton variant="rectangular" height={80} sx={{ mb: 2 }} />
+                  {contentLoading ? (
+                    <Box>
+                      {/* Skeleton for the Overview */}
+                      <Skeleton variant="text" width="40%" height={40} sx={{ mb: 2 }} />
+                      <Skeleton variant="rectangular" height={100} sx={{ mb: 3 }} />
+
+                      {/* Skeleton for Key Findings */}
+                      <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
+                      {[...Array(3)].map((_, index) => (
+                        <Box key={index} sx={{ mb: 2 }}>
+                          <Skeleton variant="text" width="50%" height={30} />
+                          <Skeleton variant="rectangular" height={60} sx={{ my: 1 }} />
                         </Box>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="content"
-                        variants={contentVariantsTwo}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        style={{
-                          transformOrigin: 'center top',
-                          willChange: 'transform, opacity'
-                        }}
-                      >
-                        <>
-                          {results.length > 0 && <GeminiResults results={results} />}
-                          {results.length > 0 && (
-                            <GeminiResultsExpanded
-                              results={results}
-                              isOpen={isResultsOpen}
-                              onClose={() => setIsResultsOpen(false)}
-                            />
-                          )}
+                      ))}
 
-                          {summaryData && (
-                            <Box
-                              sx={{
-                                border: '1px solid rgba(255, 255, 255, 0.12)',
-                                borderRadius: '4px',
-                                p: { xs: 2, sm: 3 },
-                                mb: { xs: 3, sm: 4 },
-                                mt: { xs: 3, sm: 4 },
-                                position: 'relative',
-                              }}
-                            >
-                              <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-                                <Typography variant="h4" gutterBottom>
-                                  Overview
-                                </Typography>
-                                <Typography variant="body1">
-                                  {summaryData.overview}
-                                </Typography>
-                              </Box>
+                      {/* Skeleton for Conclusion */}
+                      <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
+                      <Skeleton variant="rectangular" height={80} sx={{ mb: 2 }} />
+                    </Box>
+                  ) : (
+                    <>
+                      {results.length > 0 && <GeminiResults results={results} />}
+                      {results.length > 0 && (
+                        <GeminiResultsExpanded
+                          results={results}
+                          isOpen={isResultsOpen}
+                          onClose={() => setIsResultsOpen(false)}
+                        />
+                      )}
 
-                              <Divider sx={{ my: { xs: 1, sm: 2 } }} />
+                      {summaryData && (
+                        <Box
+                          sx={{
+                            border: '1px solid rgba(255, 255, 255, 0.12)',
+                            borderRadius: '4px',
+                            p: { xs: 2, sm: 3 },
+                            mb: { xs: 3, sm: 4 },
+                            mt: { xs: 3, sm: 4 },
+                            position: 'relative',
+                          }}
+                        >
+                          <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                            <Typography variant="h4" gutterBottom>
+                              Overview
+                            </Typography>
+                            <Typography variant="body1">
+                              {summaryData.overview}
+                            </Typography>
+                          </Box>
 
-                              <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-                                <Typography variant="h5" gutterBottom>
-                                  Key Findings
-                                </Typography>
-                                {summaryData.keyFindings.map((finding, index) => (
-                                  <Accordion
-                                    key={index}
-                                    sx={{
-                                      backgroundColor: 'transparent',
-                                      '&:before': { display: 'none' },
-                                    }}
-                                  >
-                                    <AccordionSummary
-                                      expandIcon={<ExpandMoreIcon />}
-                                      sx={{
-                                        borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
-                                      }}
-                                    >
-                                      <Typography>{finding.title}</Typography>
-                                    </AccordionSummary>
-                                    <AccordionDetails>
-                                      <Typography>{finding.description}</Typography>
-                                    </AccordionDetails>
-                                  </Accordion>
-                                ))}
-                              </Box>
+                          <Divider sx={{ my: { xs: 1, sm: 2 } }} />
 
-                              <Divider sx={{ my: { xs: 1, sm: 2 } }} />
-
-                              <Box sx={{ mb: { xs: 2, sm: 2 } }}>
-                                <Typography variant="h5" gutterBottom>
-                                  Conclusion
-                                </Typography>
-                                <Typography variant="body1">
-                                  {summaryData.conclusion}
-                                </Typography>
-                              </Box>
-
-                              <Box
+                          <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                            <Typography variant="h5" gutterBottom>
+                              Key Findings
+                            </Typography>
+                            {summaryData.keyFindings.map((finding, index) => (
+                              <Accordion
+                                key={index}
                                 sx={{
-                                  mt: { xs: 2, sm: 3 },
-                                  pt: { xs: 1, sm: 2 },
-                                  borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-                                  display: 'flex',
-                                  flexDirection: { xs: 'column', sm: 'row' },
-                                  justifyContent: 'space-between',
-                                  alignItems: { xs: 'flex-start', sm: 'center' },
-                                  color: 'rgba(255, 255, 255, 0.7)',
-                                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                                  gap: { xs: 1, sm: 0 },
+                                  backgroundColor: 'transparent',
+                                  '&:before': { display: 'none' },
                                 }}
                               >
-                                <Typography variant="caption">
-                                  Sources: {summaryData.metadata.sourcesUsed} • Timeframe:{' '}
-                                  {summaryData.metadata.timeframe}
-                                </Typography>
-                                <IconButton
-                                  onClick={handleChatClick}
+                                <AccordionSummary
+                                  expandIcon={<ExpandMoreIcon />}
                                   sx={{
-                                    color: 'white',
-                                    alignSelf: { xs: 'flex-end', sm: 'center' },
-                                    '&:hover': {
-                                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                    },
+                                    borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
                                   }}
                                 >
-                                  <ChatIcon />
-                                </IconButton>
-                              </Box>
-                            </Box>
-                          )}
+                                  <Typography>{finding.title}</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                  <Typography>{finding.description}</Typography>
+                                </AccordionDetails>
+                              </Accordion>
+                            ))}
+                          </Box>
 
-                          {results.length > 0 && <AnalyticsDashboard results={results} />}
-                        </>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                          <Divider sx={{ my: { xs: 1, sm: 2 } }} />
+
+                          <Box sx={{ mb: { xs: 2, sm: 2 } }}>
+                            <Typography variant="h5" gutterBottom>
+                              Conclusion
+                            </Typography>
+                            <Typography variant="body1">
+                              {summaryData.conclusion}
+                            </Typography>
+                          </Box>
+
+                          <Box
+                            sx={{
+                              mt: { xs: 2, sm: 3 },
+                              pt: { xs: 1, sm: 2 },
+                              borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+                              display: 'flex',
+                              flexDirection: { xs: 'column', sm: 'row' },
+                              justifyContent: 'space-between',
+                              alignItems: { xs: 'flex-start', sm: 'center' },
+                              color: 'rgba(255, 255, 255, 0.7)',
+                              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                              gap: { xs: 1, sm: 0 },
+                            }}
+                          >
+                            <Typography variant="caption">
+                              Sources: {summaryData.metadata.sourcesUsed} • Timeframe:{' '}
+                              {summaryData.metadata.timeframe}
+                            </Typography>
+                            <IconButton
+                              onClick={handleChatClick}
+                              sx={{
+                                color: 'white',
+                                alignSelf: { xs: 'flex-end', sm: 'center' },
+                                '&:hover': {
+                                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                },
+                              }}
+                            >
+                              <ChatIcon />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                      )}
+
+                      {results.length > 0 && <AnalyticsDashboard results={results} />}
+                    </>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
