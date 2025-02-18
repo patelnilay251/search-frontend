@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, Skeleton } from '@mui/material'
 
 interface MinimalistLoaderProps {
   progress: number
@@ -24,6 +24,26 @@ const MinimalistLoader: React.FC<MinimalistLoaderProps> = ({ progress }) => {
   const textVariants = {
     initial: { opacity: 0 },
     animate: { opacity: 1 },
+  }
+
+  if (progress >= 100) {
+    return (
+      <Box>
+        <Skeleton variant="text" width="40%" height={40} sx={{ mb: 2 }} />
+        <Skeleton variant="rectangular" height={100} sx={{ mb: 3 }} />
+
+        <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
+        {[...Array(3)].map((_, index) => (
+          <Box key={index} sx={{ mb: 2 }}>
+            <Skeleton variant="text" width="50%" height={30} />
+            <Skeleton variant="rectangular" height={60} sx={{ my: 1 }} />
+          </Box>
+        ))}
+
+        <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
+        <Skeleton variant="rectangular" height={80} sx={{ mb: 2 }} />
+      </Box>
+    )
   }
 
   return (

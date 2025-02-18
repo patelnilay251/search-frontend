@@ -198,7 +198,7 @@ export default function GeminiSearchResults() {
   const [progress, setProgress] = useState(0)
   const [isResultsOpen, setIsResultsOpen] = useState(false)
   // New state for showing skeleton placeholders for content
-  const [contentLoading, setContentLoading] = useState(false)
+  //const [contentLoading, setContentLoading] = useState(false)
 
   const router = useRouter()
   const { setConversationSummaryData, setConversationId } = useConversationStore()
@@ -210,7 +210,6 @@ export default function GeminiSearchResults() {
 
   const fetchResults = async (query: string) => {
     setLoading(true)
-    setContentLoading(true) // show skeletons after loader completes
     setProgress(0)
     setSearchKey((prevKey) => prevKey + 1)
 
@@ -226,7 +225,7 @@ export default function GeminiSearchResults() {
       }, 300)
 
       // Simulate a longer API call delay (3 seconds)
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      await new Promise((resolve) => setTimeout(resolve, 9000))
 
       // After API call, set your data
       setSummaryData(MOCK_SUMMARY_DATA)
@@ -237,9 +236,6 @@ export default function GeminiSearchResults() {
       setProgress(100)
       setLoading(false)
       // Keep skeletons visible for an extra second for a smooth transition
-      setTimeout(() => {
-        setContentLoading(false)
-      }, 1000)
     }
   }
 
@@ -338,133 +334,113 @@ export default function GeminiSearchResults() {
                   animate="visible"
                   exit="exit"
                 >
-                  {contentLoading ? (
-                    <Box>
-                      {/* Skeleton for the Overview */}
-                      <Skeleton variant="text" width="40%" height={40} sx={{ mb: 2 }} />
-                      <Skeleton variant="rectangular" height={100} sx={{ mb: 3 }} />
 
-                      {/* Skeleton for Key Findings */}
-                      <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
-                      {[...Array(3)].map((_, index) => (
-                        <Box key={index} sx={{ mb: 2 }}>
-                          <Skeleton variant="text" width="50%" height={30} />
-                          <Skeleton variant="rectangular" height={60} sx={{ my: 1 }} />
-                        </Box>
-                      ))}
+                  {results.length > 0 && <GeminiResults results={results} />}
+                  {results.length > 0 && (
+                    <GeminiResultsExpanded
+                      results={results}
+                      isOpen={isResultsOpen}
+                      onClose={() => setIsResultsOpen(false)}
+                    />
+                  )}
 
-                      {/* Skeleton for Conclusion */}
-                      <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
-                      <Skeleton variant="rectangular" height={80} sx={{ mb: 2 }} />
-                    </Box>
-                  ) : (
-                    <>
-                      {results.length > 0 && <GeminiResults results={results} />}
-                      {results.length > 0 && (
-                        <GeminiResultsExpanded
-                          results={results}
-                          isOpen={isResultsOpen}
-                          onClose={() => setIsResultsOpen(false)}
-                        />
-                      )}
+                  {summaryData && (
+                    <Box
+                      sx={{
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '4px',
+                        p: { xs: 2, sm: 3 },
+                        mb: { xs: 3, sm: 4 },
+                        mt: { xs: 3, sm: 4 },
+                        position: 'relative',
+                      }}
+                    >
+                      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                        <Typography variant="h4" gutterBottom>
+                          Overview
+                        </Typography>
+                        <Typography variant="body1">
+                          {summaryData.overview}
+                        </Typography>
+                      </Box>
 
-                      {summaryData && (
-                        <Box
-                          sx={{
-                            border: '1px solid rgba(255, 255, 255, 0.12)',
-                            borderRadius: '4px',
-                            p: { xs: 2, sm: 3 },
-                            mb: { xs: 3, sm: 4 },
-                            mt: { xs: 3, sm: 4 },
-                            position: 'relative',
-                          }}
-                        >
-                          <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-                            <Typography variant="h4" gutterBottom>
-                              Overview
-                            </Typography>
-                            <Typography variant="body1">
-                              {summaryData.overview}
-                            </Typography>
-                          </Box>
+                      <Divider sx={{ my: { xs: 1, sm: 2 } }} />
 
-                          <Divider sx={{ my: { xs: 1, sm: 2 } }} />
-
-                          <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-                            <Typography variant="h5" gutterBottom>
-                              Key Findings
-                            </Typography>
-                            {summaryData.keyFindings.map((finding, index) => (
-                              <Accordion
-                                key={index}
-                                sx={{
-                                  backgroundColor: 'transparent',
-                                  '&:before': { display: 'none' },
-                                }}
-                              >
-                                <AccordionSummary
-                                  expandIcon={<ExpandMoreIcon />}
-                                  sx={{
-                                    borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
-                                  }}
-                                >
-                                  <Typography>{finding.title}</Typography>
-                                </AccordionSummary>
-                                <AccordionDetails>
-                                  <Typography>{finding.description}</Typography>
-                                </AccordionDetails>
-                              </Accordion>
-                            ))}
-                          </Box>
-
-                          <Divider sx={{ my: { xs: 1, sm: 2 } }} />
-
-                          <Box sx={{ mb: { xs: 2, sm: 2 } }}>
-                            <Typography variant="h5" gutterBottom>
-                              Conclusion
-                            </Typography>
-                            <Typography variant="body1">
-                              {summaryData.conclusion}
-                            </Typography>
-                          </Box>
-
-                          <Box
+                      <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                        <Typography variant="h5" gutterBottom>
+                          Key Findings
+                        </Typography>
+                        {summaryData.keyFindings.map((finding, index) => (
+                          <Accordion
+                            key={index}
                             sx={{
-                              mt: { xs: 2, sm: 3 },
-                              pt: { xs: 1, sm: 2 },
-                              borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-                              display: 'flex',
-                              flexDirection: { xs: 'column', sm: 'row' },
-                              justifyContent: 'space-between',
-                              alignItems: { xs: 'flex-start', sm: 'center' },
-                              color: 'rgba(255, 255, 255, 0.7)',
-                              fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                              gap: { xs: 1, sm: 0 },
+                              backgroundColor: 'transparent',
+                              '&:before': { display: 'none' },
                             }}
                           >
-                            <Typography variant="caption">
-                              Sources: {summaryData.metadata.sourcesUsed} • Timeframe:{' '}
-                              {summaryData.metadata.timeframe}
-                            </Typography>
-                            <IconButton
-                              onClick={handleChatClick}
+                            <AccordionSummary
+                              expandIcon={<ExpandMoreIcon />}
                               sx={{
-                                color: 'white',
-                                alignSelf: { xs: 'flex-end', sm: 'center' },
-                                '&:hover': {
-                                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                                },
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
                               }}
                             >
-                              <ChatIcon />
-                            </IconButton>
-                          </Box>
-                        </Box>
-                      )}
+                              <Typography>{finding.title}</Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                              <Typography>{finding.description}</Typography>
+                            </AccordionDetails>
+                          </Accordion>
+                        ))}
+                      </Box>
 
-                      {results.length > 0 && <AnalyticsDashboard results={results} />}
-                    </>
+                      <Divider sx={{ my: { xs: 1, sm: 2 } }} />
+
+                      <Box sx={{ mb: { xs: 2, sm: 2 } }}>
+                        <Typography variant="h5" gutterBottom>
+                          Conclusion
+                        </Typography>
+                        <Typography variant="body1">
+                          {summaryData.conclusion}
+                        </Typography>
+                      </Box>
+
+                      <Box
+                        sx={{
+                          mt: { xs: 2, sm: 3 },
+                          pt: { xs: 1, sm: 2 },
+                          borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+                          display: 'flex',
+                          flexDirection: { xs: 'column', sm: 'row' },
+                          justifyContent: 'space-between',
+                          alignItems: { xs: 'flex-start', sm: 'center' },
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          gap: { xs: 1, sm: 0 },
+                        }}
+                      >
+                        <Typography variant="caption">
+                          Sources: {summaryData.metadata.sourcesUsed} • Timeframe:{' '}
+                          {summaryData.metadata.timeframe}
+                        </Typography>
+                        <IconButton
+                          onClick={handleChatClick}
+                          sx={{
+                            color: 'white',
+                            alignSelf: { xs: 'flex-end', sm: 'center' },
+                            '&:hover': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                            },
+                          }}
+                        >
+                          <ChatIcon />
+                        </IconButton>
+                      </Box>
+                    </Box>
                   )}
+
+                  {results.length > 0 && <AnalyticsDashboard results={results} />}
+
+
                 </motion.div>
               )}
             </AnimatePresence>
