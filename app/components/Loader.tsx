@@ -29,19 +29,91 @@ const MinimalistLoader: React.FC<MinimalistLoaderProps> = ({ progress }) => {
   if (progress >= 100) {
     return (
       <Box>
-        <Skeleton variant="text" width="40%" height={40} sx={{ mb: 2 }} />
-        <Skeleton variant="rectangular" height={100} sx={{ mb: 3 }} />
+        <motion.div
+          initial={{ opacity: 0.3 }}
+          animate={{ opacity: [0.3, 0.6, 0.3] }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+        >
+          <Skeleton 
+            variant="text" 
+            width="40%" 
+            height={40} 
+            sx={{ 
+              mb: 2,
+              background: 'linear-gradient(110deg, #1e1e1e 30%, #2a2a2a 50%, #1e1e1e 70%)',
+              borderRadius: 1
+            }} 
+          />
+          <Skeleton 
+            variant="rectangular" 
+            height={100} 
+            sx={{ 
+              mb: 3,
+              background: 'linear-gradient(110deg, #1e1e1e 30%, #2a2a2a 50%, #1e1e1e 70%)',
+              borderRadius: 1
+            }} 
+          />
 
-        <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
-        {[...Array(3)].map((_, index) => (
-          <Box key={index} sx={{ mb: 2 }}>
-            <Skeleton variant="text" width="50%" height={30} />
-            <Skeleton variant="rectangular" height={60} sx={{ my: 1 }} />
-          </Box>
-        ))}
+          <Skeleton 
+            variant="text" 
+            width="30%" 
+            height={30} 
+            sx={{ 
+              mb: 2,
+              background: 'linear-gradient(110deg, #1e1e1e 30%, #2a2a2a 50%, #1e1e1e 70%)',
+              borderRadius: 1
+            }} 
+          />
+          {[...Array(3)].map((_, index) => (
+            <motion.div
+              key={index}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Box sx={{ mb: 2 }}>
+                <Skeleton 
+                  variant="text" 
+                  width="50%" 
+                  height={30}
+                  sx={{ 
+                    background: 'linear-gradient(110deg, #1e1e1e 30%, #2a2a2a 50%, #1e1e1e 70%)',
+                    borderRadius: 1
+                  }} 
+                />
+                <Skeleton 
+                  variant="rectangular" 
+                  height={60} 
+                  sx={{ 
+                    my: 1,
+                    background: 'linear-gradient(110deg, #1e1e1e 30%, #2a2a2a 50%, #1e1e1e 70%)',
+                    borderRadius: 1
+                  }} 
+                />
+              </Box>
+            </motion.div>
+          ))}
 
-        <Skeleton variant="text" width="30%" height={30} sx={{ mb: 2 }} />
-        <Skeleton variant="rectangular" height={80} sx={{ mb: 2 }} />
+          <Skeleton 
+            variant="text" 
+            width="30%" 
+            height={30} 
+            sx={{ 
+              mb: 2,
+              background: 'linear-gradient(110deg, #1e1e1e 30%, #2a2a2a 50%, #1e1e1e 70%)',
+              borderRadius: 1
+            }} 
+          />
+          <Skeleton 
+            variant="rectangular" 
+            height={80} 
+            sx={{ 
+              mb: 2,
+              background: 'linear-gradient(110deg, #1e1e1e 30%, #2a2a2a 50%, #1e1e1e 70%)',
+              borderRadius: 1
+            }} 
+          />
+        </motion.div>
       </Box>
     )
   }
