@@ -88,23 +88,19 @@ interface PostResponseBody {
 const customsearch = google.customsearch('v1');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
-/**
- * STEP A: After the enriched prompt is generated, decompose the enriched query
- * into sub-queries.
- */
 async function decomposeQuery(query: string): Promise<string[]> {
     const decompositionPrompt = `Decompose the following complex query into a list of clear, concise sub-queries for a multi-step search process. Return ONLY a JSON array of strings.
     
 Query: "${query}"`;
-    console.log("----- [Decompose Query] Prompt:", decompositionPrompt);
+
     try {
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const result: GenerationResponse = await model.generateContent(decompositionPrompt);
         let decompositionText = result.response.text();
-        console.log("----- [Decompose Query] Raw Response:", decompositionText);
+
         decompositionText = decompositionText.replace(/```json\s*|\s*```/g, '').trim();
         const subQueries = JSON.parse(decompositionText);
-        console.log("----- [Decompose Query] Parsed Sub-Queries:", subQueries);
+
         if (Array.isArray(subQueries)) {
             return subQueries.map(q => typeof q === 'string' ? q : q.query || String(q));
         } else {
@@ -116,11 +112,9 @@ Query: "${query}"`;
     }
 }
 
-/**
- * STEP B: Perform a search for each sub-query.
- */
+
 async function performSubQuerySearch(subQuery: string): Promise<GoogleSearchItem[]> {
-    console.log(`----- [Sub-Query Search] Searching for sub-query: "${subQuery}"`);
+
     try {
         const response = await customsearch.cse.list({
             auth: process.env.GOOGLE_API_KEY,
@@ -129,7 +123,7 @@ async function performSubQuerySearch(subQuery: string): Promise<GoogleSearchItem
             num: 5,
         });
         const items = (response.data.items ?? []) as GoogleSearchItem[];
-        console.log(`----- [Sub-Query Search] Found ${items.length} items for sub-query: "${subQuery}"`);
+
         return items;
     } catch (error) {
         console.error("!! Error during sub-query search for:", subQuery, error);
@@ -137,99 +131,89 @@ async function performSubQuerySearch(subQuery: string): Promise<GoogleSearchItem
     }
 }
 
-/**
- * STEP C: Aggregate the results from all sub-queries.
- */
 async function getAggregatedSearchResults(query: string): Promise<SearchResult[]> {
-    console.log("===== [Aggregation] Start Aggregating Results for Query:", query);
+
     const subQueries = await decomposeQuery(query);
-    console.log("===== [Aggregation] Decomposed sub-queries:", subQueries);
+
     const resultsArrays = await Promise.all(subQueries.map(sq => performSubQuerySearch(sq)));
     const aggregatedItems = resultsArrays.flat();
-    console.log("===== [Aggregation] Total Aggregated Items Count:", aggregatedItems.length);
     const formattedResults: SearchResult[] = aggregatedItems.map(item => ({
         title: item.title || 'No title available',
         snippet: item.snippet || 'No snippet available',
         url: item.link || '',
         source: item.link ? new URL(item.link).hostname.replace('www.', '') : 'unknown'
     }));
-    console.log("===== [Aggregation] Formatted Aggregated Results:", formattedResults);
     return formattedResults;
 }
 
-/**
- * STEP D: Get relevant search results by first enriching the query, then further
- * decomposing and aggregating search results from the enriched query.
- */
 async function getRelevantSearchResults(
     query: string,
     summaryData: SummaryData,
     conversationContext: string
 ): Promise<GetRelevantSearchResultsReturn> {
-    console.log("===== [Enrichment] Starting Enrichment for Original Query:", query);
+
     const combinedPrompt = `Analyze the following query and provide both search optimization and visualization needs.
 
-Query: "${query}"
-Context: "${summaryData.overview}"
-Conversation: "${conversationContext}"
+        Query: "${query}"
+        Context: "${summaryData.overview}"
+        Conversation: "${conversationContext}"
 
-Respond in JSON format only:
-{
-    "enrichedQuery": "optimized search query",
-    "visualization": {
-        "type": "none" | "geographic" | "financial" | "weather",
-        "entities": ["use stock symbol for companies, full name for locations"],
-        "confidence": 0-1 score,
-        "details": {
-            "stockSymbol": "AAPL",
-            "location": "Paris"
+        Respond in JSON format only:
+        {
+            "enrichedQuery": "optimized search query",
+            "visualization": {
+                "type": "none" | "geographic" | "financial" | "weather",
+                "entities": ["use stock symbol for companies, full name for locations"],
+                "confidence": 0-1 score,
+                "details": {
+                    "stockSymbol": "AAPL",
+                    "location": "Paris"
+                }
+            }
         }
-    }
-}
 
-Examples:
-Query: "How is Apple stock performing after Vision Pro launch?"
-Response: {
-    "enrichedQuery": "Apple AAPL stock performance Vision Pro launch impact",
-    "visualization": {
-        "type": "financial",
-        "entities": ["AAPL"],
-        "confidence": 1,
-        "details": { "stockSymbol": "AAPL" }
-    }
-}
+        Examples:
+        Query: "How is Apple stock performing after Vision Pro launch?"
+        Response: {
+            "enrichedQuery": "Apple AAPL stock performance Vision Pro launch impact",
+            "visualization": {
+                "type": "financial",
+                "entities": ["AAPL"],
+                "confidence": 1,
+                "details": { "stockSymbol": "AAPL" }
+            }
+        }
 
-Query: "Tourist attractions near Eiffel Tower"
-Response: {
-    "enrichedQuery": "popular tourist attractions landmarks near Eiffel Tower Paris",
-    "visualization": {
-        "type": "geographic",
-        "entities": ["Eiffel Tower, Paris"],
-        "confidence": 1,
-        "details": { "location": "Paris" }
-    }
-}
+        Query: "Tourist attractions near Eiffel Tower"
+        Response: {
+            "enrichedQuery": "popular tourist attractions landmarks near Eiffel Tower Paris",
+            "visualization": {
+                "type": "geographic",
+                "entities": ["Eiffel Tower, Paris"],
+                "confidence": 1,
+                "details": { "location": "Paris" }
+            }
+        }
 
-Query: "What's the weather like in Tokyo?"
-Response: {
-    "enrichedQuery": "current weather conditions Tokyo Japan",
-    "visualization": {
-        "type": "weather",
-        "entities": ["Tokyo, Japan"],
-        "confidence": 1,
-        "details": { "location": "Tokyo" }
-    }
-}`;
-    console.log("----- [Enrichment] Combined Prompt:", combinedPrompt);
+        Query: "What's the weather like in Tokyo?"
+        Response: {
+            "enrichedQuery": "current weather conditions Tokyo Japan",
+            "visualization": {
+                "type": "weather",
+                "entities": ["Tokyo, Japan"],
+                "confidence": 1,
+                "details": { "location": "Tokyo" }
+            }
+        }`;
 
     try {
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const result: GenerationResponse = await model.generateContent(combinedPrompt);
         const analysisText = result.response.text().trim();
-        console.log("----- [Enrichment] Raw Enrichment Response:", analysisText);
+
         const cleanedText = analysisText.replace(/```json\s*\n?/, '').replace(/```/, '').trim();
         const parsedResult: EnrichedResult = JSON.parse(cleanedText);
-        console.log("===== [Enrichment] Parsed Enriched Result:", parsedResult);
+
 
         const visualizationData: Visualization = parsedResult.visualization;
 
@@ -242,15 +226,14 @@ Response: {
             } else if (visualizationData.type === 'weather' && visualizationData.details?.location) {
                 additionalData = await fetchWeatherData(visualizationData.details.location);
             }
-            console.log("===== [Enrichment] Additional Visualization Data Fetched:", additionalData);
+
         } else {
             console.log("===== [Enrichment] No Additional Visualization Data Fetched");
         }
 
-        console.log('----- [Enrichment] Enriched Query:', parsedResult.enrichedQuery);
-        console.log('===== [Aggregation] Starting Aggregated Search for Enriched Query');
+
         const aggregatedResults = await getAggregatedSearchResults(parsedResult.enrichedQuery);
-        console.log("===== [Aggregation] Aggregated Results from Enriched Query:", aggregatedResults);
+
 
         return {
             results: aggregatedResults,
@@ -272,76 +255,73 @@ function getCorsHeaders(): { [header: string]: string } {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse<PostResponseBody | { error: string }>> {
-    console.log("========== [POST Handler] Received POST Request ==========");
+
     try {
         const body = (await req.json()) as PostRequestBody;
-        //console.log("---------- [POST Handler] Request Body:", JSON.stringify(body, null, 2));
+
         const { message, conversationId, summaryData, previousMessages = [] } = body;
 
         const conversationContext = previousMessages
             .slice(-3)
             .map((msg: Message) => `${msg.type}: ${msg.content}`)
             .join('\n');
-        //console.log("---------- [POST Handler] Conversation Context:\n", conversationContext);
 
-        console.log("========== [POST Handler] Starting getRelevantSearchResults ==========");
+
+
         const { results: searchResults, visualizationData } = await getRelevantSearchResults(
             message,
             summaryData,
             conversationContext
         );
-        //console.log("========== [POST Handler] Search Results:", JSON.stringify(searchResults, null, 2));
-        //console.log("========== [POST Handler] Visualization Data:", visualizationData);
+
 
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const searchContext = searchResults
             .map((result, index) => `[${index + 1}] ${result.source}: ${result.title}\n${result.snippet}`)
             .join('\n\n');
-        console.log("---------- [POST Handler] Search Context:\n", searchContext);
+
 
         const systemPrompt = `You are an AI assistant providing detailed, accurate responses. ALWAYS RESPOND WITH VALID JSON FORMAT:
 
-{
-"response": "Your formatted response with [1][2] citations",
-"citations": [
-    {
-    "number": 1,
-    "source": "example.com",
-    "url": "https://example.com/article"
-    }
-],
-"visualizationContext": {
-    "type": "geographic|financial|weather|none",
-    "description": "Brief description of why this visualization is relevant"
-}
-}
+        {
+        "response": "Your formatted response with [1][2] citations",
+        "citations": [
+            {
+            "number": 1,
+            "source": "example.com",
+            "url": "https://example.com/article"
+            }
+        ],
+        "visualizationContext": {
+            "type": "geographic|financial|weather|none",
+            "description": "Brief description of why this visualization is relevant"
+        }
+        }
 
-CONVERSATION CONTEXT:
-Topic Summary: ${summaryData.overview}
-Previous Messages: ${conversationContext}
-CURRENT QUERY: "${message}"
-SEARCH RESULTS: ${searchContext}
-${visualizationData ? `VISUALIZATION DATA: ${JSON.stringify(visualizationData)}` : ''}
+        CONVERSATION CONTEXT:
+        Topic Summary: ${summaryData.overview}
+        Previous Messages: ${conversationContext}
+        CURRENT QUERY: "${message}"
+        SEARCH RESULTS: ${searchContext}
+        ${visualizationData ? `VISUALIZATION DATA: ${JSON.stringify(visualizationData)}` : ''}
 
-RESPONSE RULES:
-1. Use citations from search results , to form well detailed answer of 300 - 400 words 
-2. Maintain conversation context
-3. Always valid JSON format
-4. If visualization data is provided, explain its relevance in visualizationContext
-5. If the search results are insufficient or not relevant, 
-integrate both the provided search results and 
-your internal training data to generate the best possible result.`;
-        //console.log("---------- [POST Handler] System Prompt:\n", systemPrompt);
+        RESPONSE RULES:
+        1. Use citations from search results , to form well detailed answer of  One line,One para,100-200 words , 300 - 400 words ,Depeding upon the context and query
+        2. Maintain conversation context
+        3. Always valid JSON format
+        4. If visualization data is provided, explain its relevance in visualizationContext
+        `;
+
 
         const genResult: GenerationResponse = await model.generateContent(systemPrompt);
         const responseText = genResult.response.text();
-        //console.log("---------- [POST Handler] Raw Generated Response:\n", responseText);
+
 
         let structuredResponse: { response: string; citations?: Citation[]; visualizationContext?: unknown };
         try {
             const cleanedResponse = responseText.replace(/```json\s*|\s*```/g, '');
             structuredResponse = JSON.parse(cleanedResponse);
-            //console.log("---------- [POST Handler] Parsed Structured Response:\n", structuredResponse);
+
         } catch (e) {
             console.error("!! [POST Handler] Error parsing generated response:", e);
             const citationMatches = [...responseText.matchAll(/\[(\d+)\]/g)];
@@ -359,7 +339,7 @@ your internal training data to generate the best possible result.`;
                 })
                 .filter((citation): citation is Citation => citation !== null);
             structuredResponse = { response: responseText, citations };
-            console.log("---------- [POST Handler] Fallback Structured Response:\n", structuredResponse);
+
         }
 
         const assistantMessage: AssistantMessage = {
@@ -371,9 +351,7 @@ your internal training data to generate the best possible result.`;
             visualizationContext: structuredResponse.visualizationContext,
             timestamp: new Date().toISOString()
         };
-        console.log("========== [POST Handler] Final Assistant Message:\n", assistantMessage);
 
-        console.log("========== [POST Handler] Sending Final Response ==========");
         return NextResponse.json(
             {
                 messages: [assistantMessage],

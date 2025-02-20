@@ -15,7 +15,7 @@ import {
   Divider,
   Skeleton, // <-- ensure Skeleton is imported
 } from '@mui/material'
-import MinimalistLoader from './Loader'
+import MinimalistLoader from './MinimalistLoader'
 import GeminiResults from './GeminiResults'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import ChatIcon from '@mui/icons-material/Chat'
@@ -225,11 +225,29 @@ export default function GeminiSearchResults() {
       }, 300)
 
       // Simulate a longer API call delay (3 seconds)
-      await new Promise((resolve) => setTimeout(resolve, 9000))
+      // await new Promise((resolve) => setTimeout(resolve, 9000))
+      // setSummaryData(MOCK_SUMMARY_DATA)
+      // setResults(MOCK_SEARCH_RESULTS)
 
-      // After API call, set your data
-      setSummaryData(MOCK_SUMMARY_DATA)
-      setResults(MOCK_SEARCH_RESULTS)
+      const response = await fetch('/api/gemini-search', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const parsedSummaryData = typeof data.summaryData === 'string'
+        ? JSON.parse(data.summaryData)
+        : data.summaryData
+      setSummaryData(parsedSummaryData)
+      setResults(data.searchResults || [])
     } catch (error) {
       console.error('Error details:', error)
     } finally {

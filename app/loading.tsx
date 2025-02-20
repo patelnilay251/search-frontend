@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import MinimalistLoader from './components/Loader';
+import MinimalistLoader from './components/MinimalistLoader';
 
 export default function Loading() {
     const [progress, setProgress] = useState(0);
