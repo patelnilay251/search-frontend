@@ -187,6 +187,17 @@ const MOCK_SEARCH_RESULTS: Result[] = [
   }
 ]
 
+// Add these new interfaces for streaming updates
+interface StreamUpdate {
+  type: 'decomposition' | 'search' | 'processing' | 'complete';
+  data: any;
+}
+
+interface SearchProgress {
+  current: number;
+  total: number;
+}
+
 export default function GeminiSearchResults() {
   const [results, setResults] = useState<Result[]>([])
   const [loading, setLoading] = useState(false)
@@ -197,8 +208,12 @@ export default function GeminiSearchResults() {
   const [showConveyor, setShowConveyor] = useState(true)
   const [progress, setProgress] = useState(0)
   const [isResultsOpen, setIsResultsOpen] = useState(false)
-  // New state for showing skeleton placeholders for content
-  //const [contentLoading, setContentLoading] = useState(false)
+  const [currentStep, setCurrentStep] = useState('')
+  const [stepMessage, setStepMessage] = useState('')
+  const [decomposedQueries, setDecomposedQueries] = useState<string[]>([])
+  const [searchProgress, setSearchProgress] = useState({ total: 0, current: 0 })
+  const [partialResults, setPartialResults] = useState<Result[]>([])
+  const [finalizing, setFinalizing] = useState(false)
 
   const router = useRouter()
   const { setConversationSummaryData, setConversationId } = useConversationStore()
@@ -213,22 +228,29 @@ export default function GeminiSearchResults() {
     setProgress(0)
     setSearchKey((prevKey) => prevKey + 1)
 
+    // Reset all the streaming-related states
+    setDecomposedQueries([])
+    setCurrentStep('')
+    setStepMessage('')
+    setSearchProgress({ current: 0, total: 0 })
+    setPartialResults([])
+    setFinalizing(false)
+    setSummaryData(null)
+    setResults([])
+
     try {
-      const interval = setInterval(() => {
+      // For mock UI with a simple progress indicator
+      const progressInterval = setInterval(() => {
         setProgress((prev) => {
           if (prev >= 100) {
-            clearInterval(interval)
+            clearInterval(progressInterval)
             return 100
           }
-          return prev + 10
+          return prev + 1
         })
-      }, 300)
+      }, 100)
 
-      // Simulate a longer API call delay (3 seconds)
-      // await new Promise((resolve) => setTimeout(resolve, 9000))
-      // setSummaryData(MOCK_SUMMARY_DATA)
-      // setResults(MOCK_SEARCH_RESULTS)
-
+      // Set up EventSource for real-time updates
       const response = await fetch('/api/gemini-search', {
         method: 'POST',
         credentials: 'include',
@@ -242,18 +264,92 @@ export default function GeminiSearchResults() {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data = await response.json()
-      const parsedSummaryData = typeof data.summaryData === 'string'
-        ? JSON.parse(data.summaryData)
-        : data.summaryData
-      setSummaryData(parsedSummaryData)
-      setResults(data.searchResults || [])
+      // Process the stream
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('Response body is not readable')
+      }
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      // Read the stream
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        // Append chunk to buffer and process any complete events
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n\n')
+        buffer = lines.pop() || '' // Keep the last incomplete chunk in the buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const update = JSON.parse(line.substring(6)) as StreamUpdate
+              handleStreamUpdate(update)
+            } catch (e) {
+              console.error('Error parsing SSE data:', e)
+            }
+          }
+        }
+      }
+
+      clearInterval(progressInterval)
+      setProgress(100)
     } catch (error) {
       console.error('Error details:', error)
+      // Fallback to mock data in case of error
+      setSummaryData(MOCK_SUMMARY_DATA)
+      setResults(MOCK_SEARCH_RESULTS)
     } finally {
-      setProgress(100)
       setLoading(false)
-      // Keep skeletons visible for an extra second for a smooth transition
+    }
+  }
+
+  const handleStreamUpdate = (update: StreamUpdate) => {
+    switch (update.type) {
+      case 'processing':
+        setCurrentStep(update.data.step)
+        setStepMessage(update.data.message)
+        break
+
+      case 'decomposition':
+        setDecomposedQueries(update.data.subQueries)
+        break
+
+      case 'search':
+        // Update search progress
+        setSearchProgress(update.data.progress)
+
+        // Add new results to existing partial results
+        setPartialResults(prev => {
+          // Combine existing results with new ones, avoiding duplicates
+          const newResults = [...prev]
+          update.data.results.forEach((result: Result) => {
+            if (!newResults.some(r => r.url === result.url)) {
+              newResults.push(result)
+            }
+          })
+          // Sort by score
+          return newResults.sort((a, b) => b.score - a.score)
+        })
+        break
+
+      case 'complete':
+        setFinalizing(false)
+
+        // Parse summary data if needed
+        const summaryDataParsed = typeof update.data.summaryData === 'string'
+          ? JSON.parse(update.data.summaryData)
+          : update.data.summaryData
+
+        setSummaryData(summaryDataParsed)
+        setResults(update.data.searchResults || [])
+        break
+
+      default:
+        console.log('Unknown update type:', update.type)
     }
   }
 
@@ -342,7 +438,236 @@ export default function GeminiSearchResults() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  <MinimalistLoader progress={progress} />
+
+                  {/* <MinimalistLoader progress={progress} /> */}
+
+                  {/* Real-time search info panel */}
+                  <Box
+                    sx={{
+                      mt: 4,
+                      p: 3,
+                      borderRadius: '8px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
+                  >
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        mb: 2,
+                        fontWeight: 500,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}
+                    >
+                      <motion.div
+                        animate={{
+                          opacity: [0.5, 1, 0.5],
+                          scale: [0.98, 1, 0.98]
+                        }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 2
+                        }}
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          backgroundColor: '#4CAF50',
+                          display: 'inline-block'
+                        }}
+                      />
+                      Searching for "{query}"
+                    </Typography>
+
+                    {/* Current step message displayed prominently */}
+                    {stepMessage && (
+                      <Box sx={{ mb: 3 }}>
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          {stepMessage}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {/* Real-time query decomposition */}
+                    {decomposedQueries.length > 0 && (
+                      <Box sx={{ mb: 4 }}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: 500, fontSize: '1rem', color: 'rgba(255, 255, 255, 0.9)' }}>
+                          Query Decomposition:
+                        </Typography>
+                        <Box sx={{ pl: 2, borderLeft: '2px solid rgba(255, 255, 255, 0.2)', mt: 1 }}>
+                          {decomposedQueries.map((subQuery, index) => (
+                            <motion.div
+                              key={`query-${index}`}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                            >
+                              <Typography
+                                variant="body1"
+                                component="div"
+                                sx={{
+                                  my: 1,
+                                  color: 'rgba(255, 255, 255, 0.8)',
+                                  fontSize: '0.95rem',
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  gap: 1
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    minWidth: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.75rem',
+                                    mt: '2px'
+                                  }}
+                                >
+                                  {index + 1}
+                                </Box>
+                                {subQuery}
+                              </Typography>
+                            </motion.div>
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
+
+                  {/* Search progress indicator with count */}
+                  {searchProgress.total > 0 && (
+                    <Box
+                      sx={{
+                        mt: 3,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        p: 1.5,
+                        borderRadius: '6px'
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        Search Progress
+                        <Typography component="span" variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', ml: 1 }}>
+                          {searchProgress.current} of {searchProgress.total} queries completed
+                        </Typography>
+                      </Typography>
+                      <Box sx={{ width: '30%' }}>
+                        <Box
+                          sx={{
+                            height: '6px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            borderRadius: '3px',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              height: '100%',
+                              width: `${(searchProgress.current / searchProgress.total) * 100}%`,
+                              backgroundColor: '#2196F3',
+                              transition: 'width 0.3s ease'
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Show partial search results in a cleaner layout */}
+                  {partialResults.length > 0 && (
+                    <Box
+                      sx={{
+                        mt: 4,
+                        animation: 'fadeIn 0.5s ease-in-out',
+                        '@keyframes fadeIn': {
+                          '0%': { opacity: 0 },
+                          '100%': { opacity: 1 }
+                        },
+                        p: 3,
+                        borderRadius: '8px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          mb: 2,
+                          fontWeight: 500
+                        }}
+                      >
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                        >
+                          <BarChartIcon fontSize="small" sx={{ color: '#4CAF50' }} />
+                        </motion.div>
+                        Real-time Search Results
+                      </Typography>
+
+                      <Box sx={{ mt: 2 }}>
+                        <GeminiResults results={partialResults.slice(0, 5)} />
+                        {partialResults.length > 5 && (
+                          <Box sx={{ textAlign: 'center', mt: 2 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: 'rgba(255, 255, 255, 0.6)',
+                                fontStyle: 'italic'
+                              }}
+                            >
+                              + {partialResults.length - 5} more results being processed...
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Show "Finalizing results" message */}
+                  {finalizing && (
+                    <Box
+                      sx={{
+                        mt: 4,
+                        textAlign: 'center',
+                        p: 2,
+                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                        borderRadius: '8px',
+                      }}
+                    >
+                      <motion.div
+                        animate={{
+                          opacity: [0.5, 1, 0.5],
+                        }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 1.5
+                        }}
+                      >
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          Finalizing your results and generating summary...
+                        </Typography>
+                      </motion.div>
+                    </Box>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div
