@@ -1,8 +1,8 @@
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Typography, Box } from '@mui/material'
+import { Typography, Box, Checkbox } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
-
+import CheckIcon from '@mui/icons-material/Check';
 
 // Define interfaces for props
 interface Result {
@@ -32,6 +32,15 @@ const fadeInUp = {
     animate: { opacity: 1, y: 0, transition: { duration: 0.4 } }
 }
 
+const getDomainFromUrl = (url: string) => {
+    try {
+        const domain = new URL(url).hostname.replace('www.', '');
+        return domain;
+    } catch {
+        return url;
+    }
+};
+
 const SearchStreamingInterface = ({
     query,
     stepMessage,
@@ -40,6 +49,7 @@ const SearchStreamingInterface = ({
     partialResults,
     finalizing
 }: SearchStreamingInterfaceProps) => {
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -68,7 +78,7 @@ const SearchStreamingInterface = ({
                         gap: 1.5
                     }}
                 >
-                    <SearchIcon sx={{ color: '#4CAF50', fontSize: '1.2rem' }} />
+
                     <Typography
                         variant="h6"
                         sx={{
@@ -141,30 +151,41 @@ const SearchStreamingInterface = ({
                                                     transition: 'all 0.2s ease',
                                                 }}
                                             >
-                                                <Box
-                                                    sx={{
-                                                        minWidth: '20px',
-                                                        height: '20px',
-                                                        borderRadius: '0px', // Sharp edges
-                                                        backgroundColor: index < searchProgress.current
-                                                            ? 'rgba(76, 175, 80, 0.2)'
-                                                            : 'rgba(255, 255, 255, 0.1)',
-                                                        border: index < searchProgress.current
-                                                            ? '1px solid rgba(76, 175, 80, 0.6)'
-                                                            : '1px solid rgba(255, 255, 255, 0.2)',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '0.7rem',
-                                                        fontWeight: 600,
-                                                        mt: 0.2,
-                                                        color: index < searchProgress.current
-                                                            ? '#4CAF50'
-                                                            : 'inherit',
+
+                                                <motion.div
+                                                    initial={{ opacity: 0.7 }}
+                                                    animate={{
+                                                        opacity: index < searchProgress.current ? 1 : 0.7,
+                                                        scale: index < searchProgress.current ? [1, 1.05, 1] : 1
                                                     }}
+                                                    transition={{ duration: 0.3 }}
                                                 >
-                                                    ✓
-                                                </Box>
+                                                    <Checkbox
+                                                        checked={index < searchProgress.current}
+                                                        icon={<Box sx={{ width: 18, height: 18, borderRadius: 0.5, border: '1px solid rgba(255, 255, 255, 0.2)', bgcolor: 'rgba(255, 255, 255, 0.08)' }} />}
+                                                        checkedIcon={
+                                                            <Box
+                                                                sx={{
+                                                                    width: 18,
+                                                                    height: 18,
+                                                                    borderRadius: 0.5,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+                                                                    border: '1.5px solid #4CAF50'
+                                                                }}
+                                                            >
+                                                                <CheckIcon sx={{ fontSize: 14, color: '#4CAF50' }} />
+                                                            </Box>
+                                                        }
+                                                        sx={{
+                                                            padding: 0.5,
+                                                            '&:hover': { bgcolor: 'transparent' }
+                                                        }}
+                                                        disableRipple
+                                                    />
+                                                </motion.div>
                                                 <Typography
                                                     variant="body2"
                                                     sx={{
@@ -313,23 +334,7 @@ const SearchStreamingInterface = ({
                                                 }}
                                             >
                                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                                    <Box
-                                                        component="span"
-                                                        sx={{
-                                                            width: '18px',
-                                                            height: '18px',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            fontSize: '0.7rem',
-                                                            backgroundColor: 'rgba(255, 193, 7, 0.2)',
-                                                            color: '#FFC107',
-                                                            borderRadius: '0px', // Sharp edges
-                                                            mr: 1
-                                                        }}
-                                                    >
-                                                        E
-                                                    </Box>
+
                                                     <Typography
                                                         variant="subtitle2"
                                                         sx={{
@@ -338,8 +343,9 @@ const SearchStreamingInterface = ({
                                                             color: 'rgba(255, 255, 255, 0.95)'
                                                         }}
                                                     >
-                                                        {result.title}
+                                                        {result.title.length > 25 ? `${result.title.slice(0, 30)}...` : result.title}
                                                     </Typography>
+
                                                     <Typography
                                                         variant="caption"
                                                         sx={{
@@ -348,7 +354,8 @@ const SearchStreamingInterface = ({
                                                             fontSize: '0.75rem'
                                                         }}
                                                     >
-                                                        {result.url}
+
+                                                        {getDomainFromUrl(result.url)}
                                                     </Typography>
                                                 </Box>
                                                 <Typography
