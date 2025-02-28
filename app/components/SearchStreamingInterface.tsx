@@ -1,6 +1,6 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { Typography, Box, Checkbox } from '@mui/material'
+import React, { useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Typography, Box, Checkbox, Fade } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import CheckIcon from '@mui/icons-material/Check';
 
@@ -49,6 +49,32 @@ const SearchStreamingInterface = ({
     partialResults,
     finalizing
 }: SearchStreamingInterfaceProps) => {
+    // Ref for the results container to enable autoscroll
+    const resultsContainerRef = useRef<HTMLDivElement>(null);
+    const lastResultRef = useRef<HTMLDivElement>(null);
+    
+    // Auto-scroll to the bottom when new results come in
+    useEffect(() => {
+        if (resultsContainerRef.current && partialResults.length > 0) {
+            const container = resultsContainerRef.current;
+            // Smooth scroll to bottom with animation
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }, [partialResults.length]);
+
+    // Auto-scroll when finalizing status changes
+    useEffect(() => {
+        if (finalizing && resultsContainerRef.current) {
+            const container = resultsContainerRef.current;
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }, [finalizing]);
 
     return (
         <motion.div
@@ -75,10 +101,14 @@ const SearchStreamingInterface = ({
                         borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 1.5
+                        gap: 1.5,
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 10,
+                        backdropFilter: 'blur(10px)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.95)'
                     }}
                 >
-
                     <Typography
                         variant="h6"
                         sx={{
@@ -224,10 +254,27 @@ const SearchStreamingInterface = ({
                     </Box>
 
                     {/* Right column - Search results */}
-                    <Box sx={{
-                        width: '70%',
-                        overflow: 'auto'
-                    }}>
+                    <Box 
+                        ref={resultsContainerRef}
+                        sx={{
+                            width: '70%',
+                            overflow: 'auto',
+                            scrollBehavior: 'smooth',
+                            '&::-webkit-scrollbar': {
+                                width: '8px',
+                            },
+                            '&::-webkit-scrollbar-track': {
+                                background: 'rgba(255, 255, 255, 0.05)',
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                background: 'rgba(255, 255, 255, 0.2)',
+                                borderRadius: '0px',
+                            },
+                            '&::-webkit-scrollbar-thumb:hover': {
+                                background: 'rgba(255, 255, 255, 0.3)',
+                            }
+                        }}
+                    >
                         <Box sx={{ p: 2 }}>
                             {/* Thinking/Current phase description */}
                             <Typography
@@ -319,140 +366,129 @@ const SearchStreamingInterface = ({
                             {/* Results list */}
                             {partialResults.length > 0 && (
                                 <Box sx={{ mt: 2 }}>
-                                    {partialResults.map((result, index) => (
-                                        <motion.div
-                                            key={`result-${index}`}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.1, duration: 0.3 }}
-                                        >
-                                            <Box
-                                                sx={{
-                                                    mb: 2.5,
-                                                    pb: 2,
-                                                    borderBottom: index < partialResults.length - 1 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none'
-                                                }}
+                                    <AnimatePresence>
+                                        {partialResults.map((result, index) => (
+                                            <motion.div
+                                                key={`result-${index}`}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.05, duration: 0.3 }}
+                                                ref={index === partialResults.length - 1 ? lastResultRef : null}
                                             >
-                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-
-                                                    <Typography
-                                                        variant="subtitle2"
-                                                        sx={{
-                                                            fontWeight: 600,
-                                                            fontSize: '0.85rem',
-                                                            color: 'rgba(255, 255, 255, 0.95)'
-                                                        }}
-                                                    >
-                                                        {result.title.length > 25 ? `${result.title.slice(0, 30)}...` : result.title}
-                                                    </Typography>
-
-                                                    <Typography
-                                                        variant="caption"
-                                                        sx={{
-                                                            ml: 'auto',
-                                                            color: 'rgba(255, 255, 255, 0.5)',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                    >
-
-                                                        {getDomainFromUrl(result.url)}
-                                                    </Typography>
-                                                </Box>
-                                                <Typography
-                                                    variant="body2"
+                                                <Box
                                                     sx={{
-                                                        color: 'rgba(255, 255, 255, 0.7)',
-                                                        fontSize: '0.8rem',
-                                                        lineHeight: 1.4,
-                                                        pl: 3.5
+                                                        mb: 2.5,
+                                                        pb: 2,
+                                                        borderBottom: index < partialResults.length - 1 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none',
+                                                        position: 'relative',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                                        },
+                                                        transition: 'background-color 0.2s ease',
+                                                        borderRadius: '0px',
+                                                        pl: 1
                                                     }}
                                                 >
-                                                    {result.text}
-                                                </Typography>
-                                            </Box>
-                                        </motion.div>
-                                    ))}
+                                                    <Box sx={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        mb: 0.5,
+                                                        position: 'relative',
+                                                    }}>
+                                                        {/* New indicator for fresh results */}
+                                                        {index === partialResults.length - 1 && (
+                                                            <Box
+                                                                component={motion.div}
+                                                                initial={{ opacity: 0 }}
+                                                                animate={{ opacity: [0.7, 1, 0.7] }}
+                                                                transition={{ repeat: Infinity, duration: 2 }}
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    left: -10,
+                                                                    top: '50%',
+                                                                    transform: 'translateY(-50%)',
+                                                                    width: 4,
+                                                                    height: 16,
+                                                                    backgroundColor: '#4CAF50',
+                                                                    borderRadius: '0px'
+                                                                }}
+                                                            />
+                                                        )}
+                                                        <Typography
+                                                            variant="subtitle2"
+                                                            sx={{
+                                                                fontWeight: 600,
+                                                                fontSize: '0.85rem',
+                                                                color: 'rgba(255, 255, 255, 0.95)'
+                                                            }}
+                                                        >
+                                                            {result.title.length > 25 ? `${result.title.slice(0, 30)}...` : result.title}
+                                                        </Typography>
+
+                                                        <Typography
+                                                            variant="caption"
+                                                            sx={{
+                                                                ml: 'auto',
+                                                                color: 'rgba(255, 255, 255, 0.5)',
+                                                                fontSize: '0.75rem'
+                                                            }}
+                                                        >
+
+                                                            {getDomainFromUrl(result.url)}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            color: 'rgba(255, 255, 255, 0.7)',
+                                                            fontSize: '0.8rem',
+                                                            lineHeight: 1.4,
+                                                            pl: 3.5
+                                                        }}
+                                                    >
+                                                        {result.text}
+                                                    </Typography>
+                                                </Box>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
 
                                     {partialResults.length > 5 && (
-                                        <Box
-                                            sx={{
-                                                textAlign: 'center',
-                                                mt: 1.5,
-                                                mb: 1,
-                                                py: 1,
-                                                cursor: 'pointer',
-                                                borderRadius: '0px', // Sharp edges
-                                                '&:hover': {
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)'
-                                                }
-                                            }}
-                                        >
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    color: 'rgba(255, 255, 255, 0.6)',
-                                                    fontWeight: 500,
-                                                    fontSize: '0.8rem'
-                                                }}
-                                            >
-                                                See more ({partialResults.length - 5})
-                                            </Typography>
-                                        </Box>
-                                    )}
-
-                                    {/* Browser status */}
-                                    <Box sx={{ mt: 3 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                                        <Fade in={true}>
                                             <Box
-                                                component="span"
                                                 sx={{
-                                                    borderRadius: '0px', // Sharp edges
-                                                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                                                    width: '18px',
-                                                    height: '18px',
+                                                    position: 'sticky',
+                                                    bottom: 16,
                                                     display: 'flex',
-                                                    alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    fontSize: '0.7rem',
-                                                    mr: 1
+                                                    width: '100%',
+                                                    pointerEvents: 'none',
+                                                    zIndex: 5
                                                 }}
                                             >
-                                                ⊕
+                                                <motion.div
+                                                    animate={{ y: [0, 5, 0] }}
+                                                    transition={{ repeat: Infinity, duration: 1.5 }}
+                                                >
+                                                    <Box
+                                                        sx={{
+                                                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                                            color: 'rgba(255, 255, 255, 0.8)',
+                                                            borderRadius: '0px',
+                                                            px: 2,
+                                                            py: 1,
+                                                            fontSize: '0.75rem',
+                                                            backdropFilter: 'blur(4px)',
+                                                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                                                        }}
+                                                    >
+                                                        Auto-scrolling as content loads
+                                                    </Box>
+                                                </motion.div>
                                             </Box>
-                                            <Typography
-                                                variant="subtitle2"
-                                                sx={{
-                                                    fontWeight: 600,
-                                                    fontSize: '0.85rem'
-                                                }}
-                                            >
-                                                Browsing results
-                                            </Typography>
-                                        </Box>
-
-                                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, ml: 2 }}>
-                                            <Box
-                                                component="span"
-                                                sx={{
-                                                    minWidth: '6px',
-                                                    height: '6px',
-                                                    borderRadius: '0px', // Sharp edges
-                                                    backgroundColor: 'white',
-                                                    mt: 1
-                                                }}
-                                            />
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    color: 'rgba(255, 255, 255, 0.7)',
-                                                    fontSize: '0.85rem',
-                                                    lineHeight: 1.5
-                                                }}
-                                            >
-                                                Web search shows articles from various sources listing top options for {query}.
-                                            </Typography>
-                                        </Box>
-                                    </Box>
+                                        </Fade>
+                                    )}
                                 </Box>
                             )}
 
