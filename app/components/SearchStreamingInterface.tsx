@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Typography, Box, Checkbox, Fade, IconButton } from '@mui/material'
+import { Typography, Box, Checkbox, IconButton } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import CheckIcon from '@mui/icons-material/Check'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
@@ -55,8 +55,8 @@ const SearchStreamingInterface = ({
     const handleScroll = () => {
         if (!resultsContainerRef.current) return;
 
-        const { scrollTop, clientHeight } = resultsContainerRef.current;
-        const scrollBottom = scrollTop + clientHeight;
+        const { clientHeight } = resultsContainerRef.current;
+        //const scrollBottom = scrollTop + clientHeight;
         const resultElements = resultsContainerRef.current.querySelectorAll('[data-result-index]');
 
         let closestIndex = null;
@@ -396,7 +396,7 @@ const SearchStreamingInterface = ({
                                                     fontSize: '0.85rem'
                                                 }}
                                             >
-                                                Searching for "{query}"
+                                                Searching for `{query}`
                                             </Typography>
                                         </Box>
                                     </>

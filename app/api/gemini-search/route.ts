@@ -34,11 +34,11 @@ interface ProcessedResult {
     score: number;
 }
 
-interface APIResponse {
-    searchResults: ProcessedResult[];
-    summaryData: string;
-    originalQuery: string;
-}
+// interface APIResponse {
+//     searchResults: ProcessedResult[];
+//     summaryData: string;
+//     originalQuery: string;
+// }
 
 interface GenerationResponse {
     response: {
@@ -47,10 +47,35 @@ interface GenerationResponse {
 }
 
 // Define an interface for streaming updates
-interface StreamUpdate {
-    type: 'decomposition' | 'search' | 'processing' | 'complete';
-    data: any;
+interface ProcessingStepData {
+    step: 'decomposition' | 'search' | 'analysis';
+    message: string;
 }
+
+interface DecompositionData {
+    subQueries: string[];
+}
+
+interface SearchData {
+    subQuery: string;
+    results: ProcessedResult[];
+    progress: {
+        current: number;
+        total: number;
+    };
+}
+
+interface CompleteData {
+    searchResults: ProcessedResult[];
+    summaryData: string;
+    originalQuery: string;
+}
+
+type StreamUpdate =
+    | { type: 'decomposition'; data: DecompositionData }
+    | { type: 'search'; data: SearchData }
+    | { type: 'processing'; data: ProcessingStepData }
+    | { type: 'complete'; data: CompleteData };
 
 const customsearch = google.customsearch('v1');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '');

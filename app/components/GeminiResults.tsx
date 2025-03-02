@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
-import { Typography, List, ListItem, Paper, Box, Link, IconButton, Button } from '@mui/material'
+import { Typography, Paper, Box, IconButton } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import GeminiResultsExpanded from './GeminiResultsExpanded'
+import Image from 'next/image';
 
 interface Result {
   title: string;
@@ -29,20 +30,20 @@ interface SearchResultsProps {
 
 
 
-const cardHoverVariants = {
-  initial: { scale: 1, boxShadow: '0px 0px 0px rgba(255, 255, 255, 0)' },
-  hover: {
-    scale: 1.02,
-    boxShadow: '0px 4px 20px rgba(255, 255, 255, 0.1)',
-    transition: { duration: 0.2, ease: 'easeInOut' }
-  },
-  tap: { scale: 0.98 }
-}
+// const cardHoverVariants = {
+//   initial: { scale: 1, boxShadow: '0px 0px 0px rgba(255, 255, 255, 0)' },
+//   hover: {
+//     scale: 1.02,
+//     boxShadow: '0px 4px 20px rgba(255, 255, 255, 0.1)',
+//     transition: { duration: 0.2, ease: 'easeInOut' }
+//   },
+//   tap: { scale: 0.98 }
+// }
 
-const truncateText = (text: string, maxLength: number) => {
-  if (text.length <= maxLength) return text;
-  return text.substr(0, maxLength) + '...';
-}
+// const truncateText = (text: string, maxLength: number) => {
+//   if (text.length <= maxLength) return text;
+//   return text.substr(0, maxLength) + '...';
+// }
 
 const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
   const [isExpanded] = useState(false);
@@ -168,10 +169,12 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                          <img
+                          <Image
                             src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(result.url)}`}
-                            alt=""
-                            style={{ width: 16, height: 16 }}
+                            alt="Website favicon"
+                            width={16}
+                            height={16}
+                            unoptimized // Add this since we're loading from external URL
                           />
                           <Typography
                             variant="caption"

@@ -13,6 +13,14 @@ interface Result {
   publishedDate: string;
 }
 
+interface YearlyDataPoint {
+  year: number;
+  count: number;
+  avgScore: number;
+  totalScore: number;
+}
+
+
 type ChartViewType = 'timeline' | 'relevance' | 'source';
 
 const containerVariants = {
@@ -45,7 +53,7 @@ const processTimelineData = (results: Result[]) => {
     acc[year].avgScore = (acc[year].totalScore / acc[year].count) * 100;
 
     return acc;
-  }, {} as Record<number, any>);
+  }, {} as Record<number, YearlyDataPoint>);
 
   // Convert to array and sort by year
   return Object.values(yearlyData)

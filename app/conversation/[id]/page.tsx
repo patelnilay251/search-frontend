@@ -17,7 +17,7 @@ import SendIcon from '@mui/icons-material/Send'
 import GeographicVisualization from '@/app/components/OutputTypes/GeographicVisualization'
 import FinancialVisualization from '@/app/components/OutputTypes/FinancialVisualization'
 import WeatherVisualization from '@/app/components/OutputTypes/WeatherVisualization'
-import { relative } from 'path'
+//import { relative } from 'path'
 
 // Add this mock data after the imports
 // const MOCK_ASSISTANT_RESPONSES: APIMessage[] = [

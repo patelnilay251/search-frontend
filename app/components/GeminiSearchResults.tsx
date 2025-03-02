@@ -13,11 +13,11 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
-  Skeleton, // <-- ensure Skeleton is imported
+  //Skeleton, // <-- ensure Skeleton is imported
 } from '@mui/material'
-import MinimalistLoader from './MinimalistLoader'
+//import MinimalistLoader from './MinimalistLoader'
 import GeminiResults from './GeminiResults'
-import BarChartIcon from '@mui/icons-material/BarChart'
+//import BarChartIcon from '@mui/icons-material/BarChart'
 import ChatIcon from '@mui/icons-material/Chat'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import QueryConveyor from './QueryConveyor'
@@ -86,17 +86,54 @@ interface SummaryData {
   }
 }
 
+interface ProcessedResult {
+  title: string;
+  text: string;
+  url: string;
+  publishedDate: string;
+  source: string;
+  score: number;
+}
 
 // Add these new interfaces for streaming updates
-interface StreamUpdate {
-  type: 'decomposition' | 'search' | 'processing' | 'complete';
-  data: any;
+// interface StreamUpdate {
+//   type: 'decomposition' | 'search' | 'processing' | 'complete';
+//   data: any;
+// }
+
+interface ProcessingStepData {
+  step: 'decomposition' | 'search' | 'analysis';
+  message: string;
 }
 
-interface SearchProgress {
-  current: number;
-  total: number;
+interface DecompositionData {
+  subQueries: string[];
 }
+
+interface SearchData {
+  subQuery: string;
+  results: ProcessedResult[];
+  progress: {
+    current: number;
+    total: number;
+  };
+}
+
+interface CompleteData {
+  searchResults: ProcessedResult[];
+  summaryData: string;
+  originalQuery: string;
+}
+
+type StreamUpdate =
+  | { type: 'decomposition'; data: DecompositionData }
+  | { type: 'search'; data: SearchData }
+  | { type: 'processing'; data: ProcessingStepData }
+  | { type: 'complete'; data: CompleteData };
+// interface SearchProgress {
+//   current: number;
+//   total: number;
+// }
 
 export default function GeminiSearchResults() {
   const [results, setResults] = useState<Result[]>([])
@@ -106,8 +143,10 @@ export default function GeminiSearchResults() {
   const [query, setQuery] = useState('')
   const [searchKey, setSearchKey] = useState(0)
   const [showConveyor, setShowConveyor] = useState(true)
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   const [progress, setProgress] = useState(0)
   const [isResultsOpen, setIsResultsOpen] = useState(false)
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   const [currentStep, setCurrentStep] = useState('')
   const [stepMessage, setStepMessage] = useState('')
   const [decomposedQueries, setDecomposedQueries] = useState<string[]>([])
@@ -247,7 +286,7 @@ export default function GeminiSearchResults() {
         break
 
       default:
-        console.log('Unknown update type:', update.type)
+        console.log('Unknown update type:')
     }
   }
 
