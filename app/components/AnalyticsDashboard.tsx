@@ -2,82 +2,217 @@
 
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Typography, Paper, Container, Box, Button} from '@mui/material'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { Typography, Paper, Container, Box, Button, Grid } from '@mui/material'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, ZAxis } from 'recharts'
 
+interface Result {
+  title: string;
+  text: string;
+  url: string;
+  score: number;
+  publishedDate: string;
+}
+
+interface YearlyDataPoint {
+  year: number;
+  count: number;
+  avgScore: number;
+  totalScore: number;
+}
+
+
+type ChartViewType = 'timeline' | 'relevance' | 'source';
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: { 
+  visible: {
     opacity: 1,
-    transition: { 
+    transition: {
       staggerChildren: 0.1,
       duration: 0.5
     }
   }
 }
 
-// const itemVariants = {
-//   hidden: { opacity: 0, y: 20 },
-//   visible: { 
-//     opacity: 1,
-//     y: 0,
-//     transition: { 
-//       duration: 0.3
-//     }
-//   }
-// }
+const processTimelineData = (results: Result[]) => {
+  // Group by year and calculate metrics
+  const yearlyData = results.reduce((acc, result) => {
+    const year = new Date(result.publishedDate).getFullYear();
 
-const trendData = [
-  { name: 'Jan', searches: 4000 },
-  { name: 'Feb', searches: 3000 },
-  { name: 'Mar', searches: 5000 },
-  { name: 'Apr', searches: 4500 },
-  { name: 'May', searches: 6000 },
-  { name: 'Jun', searches: 5500 },
-]
+    if (!acc[year]) {
+      acc[year] = {
+        year,
+        count: 0,
+        avgScore: 0,
+        totalScore: 0,
+      };
+    }
 
-const topicData = [
-  { name: 'Technology', value: 400 },
-  { name: 'Science', value: 300 },
-  { name: 'Politics', value: 200 },
-  { name: 'Entertainment', value: 100 },
-]
+    acc[year].count += 1;
+    acc[year].totalScore += result.score;
+    acc[year].avgScore = (acc[year].totalScore / acc[year].count) * 100;
 
-// const wordCloudData = [
-//   { text: 'AI', value: 64 },
-//   { text: 'Machine Learning', value: 50 },
-//   { text: 'Data Science', value: 40 },
-//   { text: 'Neural Networks', value: 30 },
-//   { text: 'Deep Learning', value: 25 },
-//   { text: 'Big Data', value: 20 },
-//   { text: 'Robotics', value: 15 },
-//   { text: 'Computer Vision', value: 10 },
-//   { text: 'Natural Language Processing', value: 8 },
-//   { text: 'Quantum Computing', value: 5 },
-// ]
+    return acc;
+  }, {} as Record<number, YearlyDataPoint>);
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
+  // Convert to array and sort by year
+  return Object.values(yearlyData)
+    .sort((a, b) => a.year - b.year);
+};
 
-export default function AnalyticsDashboard() {
-  const [activeChart, setActiveChart] = useState('trends')
-  
+const processRelevanceData = (results: Result[]) => {
+  return results
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map(result => ({
+      title: result.title.slice(0, 30) + '...',
+      score: result.score * 100,
+    }));
+};
 
-  // useEffect(() => {
-  //   if (activeChart === 'wordcloud') {
-  //     const timer = setTimeout(() => setWordCloudReady(true), 1000)
-  //     return () => clearTimeout(timer)
-  //   }
-  // }, [activeChart])
+const processSourceData = (results: Result[]) => {
+  const sourceCount = results.reduce((acc, result) => {
+    const domain = new URL(result.url).hostname;
+    acc[domain] = (acc[domain] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
-  // const wordcloudOptions = {
-  //   rotations: 2,
-  //   rotationAngles: [-90, 0],
-  //   fontSizes: [20, 60],
-  //   fontFamily: 'JetBrains Mono, monospace',
-  //   colors: COLORS,
-  //   padding: 2,
-  // }
+  return Object.entries(sourceCount)
+    .map(([source, count]) => ({
+      source,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+};
+
+interface AnalyticsDashboardProps {
+  results: Result[];
+}
+
+const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ results }) => {
+  const [activeView, setActiveView] = useState<ChartViewType>('timeline');
+
+  const renderChart = () => {
+    switch (activeView) {
+      case 'timeline':
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={processTimelineData(results)}
+              margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="year"
+                tick={{ fontSize: 12 }}
+                angle={-45}
+                textAnchor="end"
+              />
+              <YAxis
+                yAxisId="left"
+                label={{ value: 'Number of Results', angle: -90, position: 'insideLeft' }}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                label={{ value: 'Average Score (%)', angle: 90, position: 'insideRight' }}
+              />
+              <Tooltip content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <Paper sx={{ p: 2, backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
+                      <Typography sx={{ color: '#000' }}>
+                        Year: {payload[0].payload.year}
+                      </Typography>
+                      <Typography sx={{ color: '#8884d8' }}>
+                        Results: {payload[0].payload.count}
+                      </Typography>
+                      <Typography sx={{ color: '#82ca9d' }}>
+                        Avg Score: {payload[0].payload.avgScore.toFixed(1)}%
+                      </Typography>
+                    </Paper>
+                  );
+                }
+                return null;
+              }} />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="count"
+                stroke="#8884d8"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+                name="Number of Results"
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="avgScore"
+                stroke="#82ca9d"
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+                name="Average Score"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        );
+
+      case 'relevance':
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={processRelevanceData(results)}
+              layout="vertical"
+              margin={{ left: 100 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" domain={[0, 100]} />
+              <YAxis
+                dataKey="title"
+                type="category"
+                tick={{ fontSize: 12 }}
+                width={150}
+              />
+              <Tooltip />
+              <Bar
+                dataKey="score"
+                fill="#82ca9d"
+                radius={[0, 4, 4, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+
+      case 'source':
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ bottom: 90 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="source"
+                tick={{ fontSize: 12 }}
+                angle={-45}
+                textAnchor="end"
+                interval={0}
+              />
+              <YAxis
+                dataKey="count"
+                label={{ value: 'Number of Articles', angle: -90, position: 'insideLeft' }}
+              />
+              <ZAxis range={[100, 500]} />
+              <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+              <Scatter
+                data={processSourceData(results)}
+                fill="#ffc658"
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
+        );
+    }
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -87,77 +222,83 @@ export default function AnalyticsDashboard() {
         variants={containerVariants}
       >
         <Typography variant="h4" gutterBottom sx={{ fontSize: '1.5rem', mb: 4 }}>
-          Analytics Dashboard
+          Search Results Analytics
         </Typography>
 
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
-          <Button 
-            onClick={() => setActiveChart('trends')}
-            variant={activeChart === 'trends' ? 'contained' : 'outlined'}
+          <Button
+            onClick={() => setActiveView('timeline')}
+            variant={activeView === 'timeline' ? 'contained' : 'outlined'}
             sx={{ mr: 2 }}
           >
-            Search Trends
+            Timeline View
           </Button>
-          <Button 
-            onClick={() => setActiveChart('topics')}
-            variant={activeChart === 'topics' ? 'contained' : 'outlined'}
+          <Button
+            onClick={() => setActiveView('relevance')}
+            variant={activeView === 'relevance' ? 'contained' : 'outlined'}
             sx={{ mr: 2 }}
           >
-            Topic Distribution
+            Relevance Scores
           </Button>
-          <Button 
-            onClick={() => setActiveChart('wordcloud')}
-            variant={activeChart === 'wordcloud' ? 'contained' : 'outlined'}
+          <Button
+            onClick={() => setActiveView('source')}
+            variant={activeView === 'source' ? 'contained' : 'outlined'}
           >
-            Word Cloud
+            Source Distribution
           </Button>
         </Box>
 
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeChart}
+            key={activeView}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <Paper elevation={0} sx={{ p: 3, mb: 4, height: 400 }}>
-              {activeChart === 'trends' && (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="searches" stroke="#8884d8" />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-              {activeChart === 'topics' && (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={topicData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={150}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {topicData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                mb: 4,
+                height: 500,
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                backdropFilter: 'blur(10px)'
+              }}
+            >
+              {renderChart()}
             </Paper>
           </motion.div>
         </AnimatePresence>
+
+        <Grid container spacing={3} sx={{ mt: 2 }}>
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h6">Total Results</Typography>
+              <Typography variant="h4">{results.length}</Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h6">Average Score</Typography>
+              <Typography variant="h4">
+                {(results.reduce((acc, r) => acc + r.score, 0) / results.length * 100).toFixed(1)}%
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h6">Date Range</Typography>
+              <Typography variant="h4">
+                {`${new Date(Math.min(...results.map(r => new Date(r.publishedDate).getTime()))).toLocaleDateString()} - 
+                 ${new Date(Math.max(...results.map(r => new Date(r.publishedDate).getTime()))).toLocaleDateString()}`}
+              </Typography>
+            </Paper>
+          </Grid>
+        </Grid>
       </motion.div>
     </Container>
-  )
-}
+  );
+};
 
+export default AnalyticsDashboard;

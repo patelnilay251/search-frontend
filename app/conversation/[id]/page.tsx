@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useConversationStore } from '../../store/conversationStore'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Container,
   Typography,
@@ -17,6 +17,62 @@ import SendIcon from '@mui/icons-material/Send'
 import GeographicVisualization from '@/app/components/OutputTypes/GeographicVisualization'
 import FinancialVisualization from '@/app/components/OutputTypes/FinancialVisualization'
 import WeatherVisualization from '@/app/components/OutputTypes/WeatherVisualization'
+//import { relative } from 'path'
+
+// Add this mock data after the imports
+// const MOCK_ASSISTANT_RESPONSES: APIMessage[] = [
+//   {
+//     id: '1',
+//     type: 'assistant',
+//     content: "Based on the research data, there are several key developments in renewable energy technology [1]. Solar panel efficiency has improved by 30% in the last decade [2], and wind turbine capacity has doubled [3]. The most significant breakthrough has been in energy storage solutions, with new battery technologies showing promising results [4].",
+//     citations: [
+//       {
+//         number: 1,
+//         source: "Renewable Energy Journal",
+//         url: "renewable-energy-journal.com/article-2024"
+//       },
+//       {
+//         number: 2,
+//         source: "Solar Tech Review",
+//         url: "solartechreview.org/efficiency-study"
+//       },
+//       {
+//         number: 3,
+//         source: "Wind Power Monthly",
+//         url: "windpowermonthly.com/capacity-report"
+//       },
+//       {
+//         number: 4,
+//         source: "Energy Storage News",
+//         url: "energystorage.news/battery-breakthrough"
+//       }
+//     ],
+//     timestamp: new Date().toISOString()
+//   },
+//   {
+//     id: '2',
+//     type: 'assistant',
+//     content: "Investment in renewable energy reached $500 billion globally in 2023 [1]. The most significant growth was seen in solar and wind sectors, with emerging markets leading the expansion [2]. However, challenges remain in grid integration and storage capacity [3].",
+//     citations: [
+//       {
+//         number: 1,
+//         source: "Global Energy Report",
+//         url: "globalenergyreport.org/2023"
+//       },
+//       {
+//         number: 2,
+//         source: "Emerging Markets Review",
+//         url: "emreview.com/renewable-growth"
+//       },
+//       {
+//         number: 3,
+//         source: "Power Systems Journal",
+//         url: "powersystems.org/challenges"
+//       }
+//     ],
+//     timestamp: new Date().toISOString()
+//   }
+// ];
 
 interface GeographicData {
   coordinates: {
@@ -115,7 +171,6 @@ interface VisualizationContext {
   description: string
 }
 
-
 interface Citation {
   number: number
   source: string
@@ -132,7 +187,6 @@ interface Message {
   timestamp: string
 }
 
-// Add this interface with the existing interfaces at the top of the file
 interface APIMessage {
   id: string
   type: 'user' | 'assistant'
@@ -146,7 +200,6 @@ interface APIMessage {
   visualizationContext?: VisualizationContext
   timestamp: string
 }
-
 
 const MessageContent = ({ message }: { message: Message }) => {
   const extractCitations = (content: string) => {
@@ -167,7 +220,6 @@ const MessageContent = ({ message }: { message: Message }) => {
       data: message.visualizationData.data as unknown,
       context: message.visualizationContext
     };
-    //console.log('Visualization props:', props);
 
     switch (message.visualizationData.type) {
       case 'geographic':
@@ -266,7 +318,6 @@ const MessageContent = ({ message }: { message: Message }) => {
         </Box>
       )}
 
-      {/* Add visualization after citations */}
       {renderVisualization() && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
@@ -280,12 +331,15 @@ const MessageContent = ({ message }: { message: Message }) => {
 };
 
 export default function ConversationPage() {
+
   const router = useRouter()
   const params = useParams()
   const { summaryData, conversationId } = useConversationStore()
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+
   const messagesEndRef = useRef<null | HTMLDivElement>(null)
   const id = params?.id as string
 
@@ -317,6 +371,8 @@ export default function ConversationPage() {
     setMessage('')
     setIsLoading(true)
 
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     try {
       const response = await fetch('/api/gemini-search-sub', {
         method: 'POST',
@@ -334,18 +390,44 @@ export default function ConversationPage() {
 
       const data: { messages: APIMessage[] } = await response.json()
       if (data.messages?.length) {
-        setMessages(prev => [...prev, ...data.messages.map((msg: APIMessage) => ({
-          ...msg,
-          citations: msg.citations?.map((c) => ({
-            ...c,
-            url: c.url.startsWith('http') ? c.url : `https://${c.url}`
+        setMessages(prev => [
+          ...prev,
+          ...data.messages.map((msg: APIMessage) => ({
+            ...msg,
+            citations: msg.citations?.map((c) => ({
+              ...c,
+              url: c.url.startsWith('http') ? c.url : `https://${c.url}`
+            }))
           }))
-        }))])
+        ])
       }
     } catch (error) {
       console.error('Error:', error)
     } finally {
       setIsLoading(false)
+      // try {
+      //   // Use mock data instead of API call
+      //   const mockResponse = {
+      //     messages: [
+      //       MOCK_ASSISTANT_RESPONSES[Math.floor(Math.random() * MOCK_ASSISTANT_RESPONSES.length)]
+      //     ]
+      //   };
+
+      //   setMessages(prev => [
+      //     ...prev,
+      //     ...mockResponse.messages.map((msg: APIMessage) => ({
+      //       ...msg,
+      //       citations: msg.citations?.map((c) => ({
+      //         ...c,
+      //         url: c.url.startsWith('http') ? c.url : `https://${c.url}`
+      //       }))
+      //     }))
+      //   ]);
+      // } catch (error) {
+      //   console.error('Error:', error);
+      // } finally {
+      //   setIsLoading(false);
+
     }
   }
 
@@ -363,32 +445,92 @@ export default function ConversationPage() {
       sx={{
         position: 'fixed',
         top: 0,
-        left: 240,
+        left: { xs: '60px', sm: '240px' },
         right: 0,
         bottom: 0,
         border: 'none',
         overflow: 'hidden'
       }}
     >
-      <Box
-        sx={{
-          height: '100%',
-          overflow: 'auto'
-        }}
-      >
+      <Box sx={{ height: '100%', overflow: 'auto' }}>
         <Container
           maxWidth="lg"
           sx={{
             py: 4,
             minHeight: '100vh',
             px: { xs: 2, sm: 3 },
+            pb: { xs: '100px', sm: '120px' }  // Add bottom padding to prevent content from being hidden
           }}
         >
-          <Box sx={{ maxWidth: '800px' }}>
+          <Box sx={{ maxWidth: '800px' }}>  {/* Removed mx: 'auto' */}
             <Box sx={{ mb: 4 }}>
-              <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'white' }}>
+              {/* <Typography variant="h6" component="h1" gutterBottom sx={{
+                color: 'white', fontSize: '0.5rem',
+                lineHeight: 1.5
+              }}>
                 {summaryData?.overview}
-              </Typography>
+              </Typography> */}
+              <Box sx={{ position: 'relative' }}>
+                <AnimatePresence initial={false}>
+                  <motion.div
+                    initial={{ height: 'auto' }}
+                    animate={{
+                      height: isExpanded ?
+                        'auto' : '4.5em'
+                    }}
+                    transition={{
+                      duration: 0.3,
+                      //ease:'easeInOut'
+                    }}
+                    style={{
+                      overflow: 'hidden',
+                    }}>
+                    <Typography
+                      variant="h6"
+                      component="h1"
+                      gutterBottom
+                      sx={{
+                        color: 'white',
+                        fontSize: '0.875rem',
+                        lineHeight: 1.5
+                      }} >
+                      {summaryData?.overview}
+                    </Typography>
+                  </motion.div>
+                </AnimatePresence>
+                {summaryData.overview.length > 400 && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: isExpanded ?
+                        'none' : 'linear-gradient(transparent,rgba(0,0,0,0.8))',
+                      pt: 3,
+                      pb: 1,
+                      display: 'flex',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Typography
+
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      sx={{
+                        color: 'primary.main',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        '&:hover': {
+                          textDecoration: 'underline'
+                        },
+                      }}
+                    >
+                      {isExpanded ? 'Show Less' : 'Read more'}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
             </Box>
 
             <Box>
@@ -432,10 +574,18 @@ export default function ConversationPage() {
                   </Box>
                 </Box>
               )}
-              <div ref={messagesEndRef} /> {/* Add this line */}
+              <div ref={messagesEndRef} />
             </Box>
 
-            <Box sx={{ position: 'sticky', bottom: 20, mt: 4 }}>
+            <Box sx={{
+              position: 'fixed',
+              bottom: { xs: 10, sm: 20 },
+              left: { xs: 'calc(60px + 16px)', sm: 'calc(240px + 24px)' },
+              right: { xs: '16px', sm: '24px' },
+              maxWidth: '800px',
+              width: 'calc(100% - 32px)',
+              zIndex: 10
+            }}>
               <TextField
                 fullWidth
                 variant="outlined"

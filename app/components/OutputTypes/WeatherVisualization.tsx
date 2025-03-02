@@ -6,18 +6,15 @@ import {
     Grid,
 } from '@mui/material';
 import { styled, keyframes } from '@mui/material/styles';
-//import ThermostatIcon from '@mui/icons-material/Thermostat';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 import AirIcon from '@mui/icons-material/Air';
-//import VisibilityIcon from '@mui/icons-material/Visibility';
-//import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import {
     LineChart,
     Line,
     XAxis,
     YAxis,
     Tooltip,
-    ResponsiveContainer
+    ResponsiveContainer,
 } from 'recharts';
 
 interface WeatherData {
@@ -67,7 +64,7 @@ const float = keyframes`
   100% { transform: translateY(0px); }
 `;
 
-const AnimatedWeatherCard = styled(Paper)(({ }) => ({
+const AnimatedWeatherCard = styled(Paper)(() => ({
     animation: `${float} 6s ease-in-out infinite`,
     background: 'rgba(255, 255, 255, 0.1)',
     backdropFilter: 'blur(10px)',
@@ -79,8 +76,6 @@ const AnimatedWeatherCard = styled(Paper)(({ }) => ({
 }));
 
 const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({ data }) => {
-    //const theme = useTheme();
-
     const hourlyData = useMemo(() => {
         return data.hourly.time.map((time, index) => ({
             time: new Date(time).getHours() + ':00',
@@ -101,17 +96,27 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({ data }) => 
         <AnimatedWeatherCard
             elevation={3}
             sx={{
-                p: 3,
+                p: { xs: 2, sm: 3 },
                 borderRadius: 2,
                 color: 'white',
                 background: getWeatherBackground(data.current.description),
             }}
         >
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
+            <Typography
+                variant="h4"
+                gutterBottom
+                sx={{
+                    fontWeight: 'bold',
+                    fontSize: { xs: '1.5rem', sm: '2rem' },
+                }}
+            >
                 {data.location}
             </Typography>
 
-            <Typography variant="h2" sx={{ mb: 2 }}>
+            <Typography
+                variant="h2"
+                sx={{ mb: 2, fontSize: { xs: '2.5rem', sm: '3rem' } }}
+            >
                 {Math.round(data.current.temperature)}
                 {data.current.units.temperature}
             </Typography>
@@ -126,7 +131,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({ data }) => 
                 {/* Humidity */}
                 <Grid item xs={12} sm={4}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <WaterDropIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                        <WaterDropIcon sx={{ fontSize: { xs: 30, sm: 40 }, color: 'primary.main' }} />
                         <Box>
                             <Typography variant="body2" color="rgba(255,255,255,0.7)">
                                 Humidity
@@ -141,7 +146,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({ data }) => 
                 {/* Wind Speed */}
                 <Grid item xs={12} sm={4}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <AirIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                        <AirIcon sx={{ fontSize: { xs: 30, sm: 40 }, color: 'primary.main' }} />
                         <Box>
                             <Typography variant="body2" color="rgba(255,255,255,0.7)">
                                 Wind Speed
@@ -158,7 +163,7 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({ data }) => 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <AirIcon
                             sx={{
-                                fontSize: 40,
+                                fontSize: { xs: 30, sm: 40 },
                                 color: 'primary.main',
                                 transform: 'rotate(45deg)',
                             }}
@@ -176,12 +181,19 @@ const WeatherVisualization: React.FC<WeatherVisualizationProps> = ({ data }) => 
             </Grid>
 
             {/* Hourly Forecast Chart */}
-            <Box sx={{ height: 200, mt: 4 }}>
+            <Box sx={{ height: { xs: 150, sm: 200 }, mt: 4 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={hourlyData}>
                         <XAxis dataKey="time" stroke="rgba(255,255,255,0.7)" />
                         <YAxis stroke="rgba(255,255,255,0.7)" />
-                        <Tooltip />
+                        <Tooltip
+                            contentStyle={{
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '8px',
+                                color: 'white',
+                            }}
+                        />
                         <Line
                             type="monotone"
                             dataKey="temperature"

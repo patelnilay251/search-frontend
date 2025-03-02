@@ -18,9 +18,34 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
 }
 
+/* Base typography responsive scaling */
+html {
+  font-size: 16px;
+}
 
+@media (max-width: 600px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Adjust MUI container padding for smaller devices */
+.MuiContainer-root {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+@media (max-width: 600px) {
+  .MuiContainer-root {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+/* Maplibre control styling */
 .maplibregl-ctrl-attrib-inner {
   display: none;
 }

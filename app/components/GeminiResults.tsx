@@ -1,76 +1,92 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
-import { Typography, List, ListItem, Paper, Box, Link, IconButton } from '@mui/material'
+import { Typography, Paper, Box, IconButton } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import GeminiResultsExpanded from './GeminiResultsExpanded'
+import Image from 'next/image';
 
 interface Result {
   title: string;
-  text: string;
+  text: string;  // keeping for compatibility
   url: string;
   score: number;
   publishedDate: string;
 }
 
+// Add this utility function to extract domain name
+const getDomainFromUrl = (url: string) => {
+  try {
+    const domain = new URL(url).hostname.replace('www.', '');
+    return domain;
+  } catch {
+    return url;
+  }
+};
+
 interface SearchResultsProps {
   results: Result[];
 }
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1,
-    y: 0,
-    transition: { 
-      duration: 0.3
-    }
-  }
-}
 
-const truncateText = (text: string, maxLength: number) => {
-  if (text.length <= maxLength) return text;
-  return text.substr(0, maxLength) + '...';
-}
+
+// const cardHoverVariants = {
+//   initial: { scale: 1, boxShadow: '0px 0px 0px rgba(255, 255, 255, 0)' },
+//   hover: {
+//     scale: 1.02,
+//     boxShadow: '0px 4px 20px rgba(255, 255, 255, 0.1)',
+//     transition: { duration: 0.2, ease: 'easeInOut' }
+//   },
+//   tap: { scale: 0.98 }
+// }
+
+// const truncateText = (text: string, maxLength: number) => {
+//   if (text.length <= maxLength) return text;
+//   return text.substr(0, maxLength) + '...';
+// }
 
 const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isExpanded] = useState(false);
+  const [isLoading] = useState(false);
+  const [isResultsOpen, setIsResultsOpen] = useState(false);
 
-  const toggleExpand = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsExpanded(!isExpanded);
-      setIsLoading(false);
-    }, 500); // Adjust this delay as needed
+  const handleOpen = () => {
+    setIsResultsOpen(true);
   };
 
   return (
     <LayoutGroup>
-      <Box sx={{ 
-        border: '1px solid rgba(255, 255, 255, 0.12)',
-        borderRadius: '4px',
-        overflow: 'hidden',
-      }}>
-        <Box sx={{
-          position: 'sticky',
-          top: 0,
-          backgroundColor: '#000',
-          zIndex: 1,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          p: 2,
-        }}>
-          <Typography variant="h5" sx={{ fontSize: '1.25rem' }}>
+      <Box
+        sx={{
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: '4px',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            position: 'sticky',
+            top: 0,
+            backgroundColor: '#000',
+            zIndex: 1,
+            borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            p: { xs: 1, sm: 2 },
+          }}
+        >
+          <Typography variant="h5" sx={{ fontSize: { xs: '0.5rem', sm: '0.95rem' } }}>
             Search Results
           </Typography>
-          <IconButton onClick={toggleExpand} sx={{ color: 'white' }} disabled={isLoading}>
+          <IconButton onClick={handleOpen} sx={{ color: 'white' }} disabled={isLoading}>
             {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
           </IconButton>
+
         </Box>
 
-        {isLoading && (
+        {/* {isLoading && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -102,8 +118,9 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
               }}
             />
           </motion.div>
-        )}
+        )} */}
 
+        {/* Collapsed View */}
         <AnimatePresence>
           {!isExpanded && !isLoading && (
             <motion.div
@@ -112,187 +129,98 @@ const GeminiResults: React.FC<SearchResultsProps> = ({ results }) => {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <Box
-                sx={{
-                  display: 'flex',
-                  overflowX: 'auto',
-                  p: 2,
-                  '&::-webkit-scrollbar': {
-                    height: '8px',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    background: '#1e1e1e',
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    background: '#888',
-                    borderRadius: '4px',
-                  },
-                  '&::-webkit-scrollbar-thumb:hover': {
-                    background: '#555',
-                  },
-                }}
-              >
-                {results.slice(0, 4).map((result, index) => (
-                  <motion.div
-                    key={index}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        width: 200,
-                        height: 150,
-                        m: 1,
-                        p: 2,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        transition: 'background-color 0.3s',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        },
-                      }}
-                    >
-                      <Typography
-                        variant="h6"
-                        component="a"
-                        href={result.url}
-                        target="_blank"
-                        sx={{
-                          color: 'primary.main',
-                          textDecoration: 'none',
-                          fontSize: '0.7rem',
-                          fontWeight: 'bold',
-                          '&:hover': {
-                            textDecoration: 'underline'
-                          }
-                        }}
-                      >
-                        {truncateText(result.title, 50)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.6rem' }}>
-                        {truncateText(result.text, 80)}
-                      </Typography>
-                    </Paper>
-                  </motion.div>
-                ))}
-              </Box>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {isExpanded && !isLoading && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Box sx={{ 
-                maxHeight: 'calc(60vh - 48px)',
-                overflowY: 'auto', 
-                '&::-webkit-scrollbar': {
-                  width: '8px',
-                },
-                '&::-webkit-scrollbar-track': {
-                  background: '#1e1e1e',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  background: '#888',
-                  borderRadius: '4px',
-                },
-                '&::-webkit-scrollbar-thumb:hover': {
-                  background: '#555',
-                },
-              }}>
-                <List sx={{ gap: 2, display: 'flex', flexDirection: 'column', p: 2 }}>
-                  {results.map((result, index) => (
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    overflowX: 'auto',
+                    p: { xs: 1, sm: 2 },
+                    '&::-webkit-scrollbar': { height: '8px' },
+                    '&::-webkit-scrollbar-track': { background: '#1e1e1e' },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: '#888',
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': { background: '#555' },
+                  }}
+                >
+                  {results.slice(0, 15).map((result, index) => (
                     <motion.div
                       key={index}
-                      variants={itemVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="hidden"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      <ListItem component={Paper} elevation={0} sx={{ p: 3 }}>
-                        <Box sx={{ width: '100%' }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography 
-                              variant="h6" 
-                              component="a" 
-                              href={result.url} 
-                              target="_blank" 
-                              sx={{ 
-                                color: 'primary.main',
-                                textDecoration: 'none',
-                                fontSize: '1rem',
-                                '&:hover': {
-                                  textDecoration: 'underline'
-                                }
-                              }}
-                            >
-                              {result.title}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
-                              {(result.score * 100).toFixed(2)}%
-                            </Typography>
-                          </Box>
-                          <Typography 
-                            variant="caption" 
-                            component="div" 
-                            color="text.secondary" 
-                            sx={{ mb: 1, fontSize: '0.75rem' }}
+
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          width: { xs: 120, sm: 160 },  // reduced width
+                          height: { xs: 80, sm: 100 },  // reduced height
+                          m: { xs: 0.5, sm: 1 },
+                          p: { xs: 1, sm: 1.5 },
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          transition: 'background-color 0.3s',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          },
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <Image
+                            src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(result.url)}`}
+                            alt="Website favicon"
+                            width={16}
+                            height={16}
+                            unoptimized // Add this since we're loading from external URL
+                          />
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: 'text.secondary',
+                              fontSize: { xs: '0.5rem', sm: '0.6rem' },
+                            }}
                           >
-                            {result.url}
-                          </Typography>
-                          {result.publishedDate && (
-                            <Typography 
-                              variant="caption" 
-                              component="div" 
-                              color="text.secondary" 
-                              sx={{ mb: 1, fontSize: '0.75rem' }}
-                            >
-                              {new Date(result.publishedDate).toLocaleDateString()}
-                            </Typography>
-                          )}
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                            {truncateText(result.text, 150)}
-                            {result.text.length > 150 && (
-                              <Link 
-                                href="#" 
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  console.log("Read more clicked for result:", index);
-                                }}
-                                sx={{ 
-                                  ml: 1,
-                                  color: 'primary.main',
-                                  textDecoration: 'none',
-                                  '&:hover': {
-                                    textDecoration: 'underline'
-                                  }
-                                }}
-                              >
-                                Read more
-                              </Link>
-                            )}
+                            {getDomainFromUrl(result.url)}
                           </Typography>
                         </Box>
-                      </ListItem>
+                        <Typography
+                          variant="h6"
+                          component="a"
+                          href={result.url}
+                          target="_blank"
+                          sx={{
+                            color: 'primary.main',
+                            textDecoration: 'none',
+                            fontSize: { xs: '0.6rem', sm: '0.7rem' },
+                            fontWeight: 'bold',
+                            '&:hover': { textDecoration: 'underline' },
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {result.title}
+                        </Typography>
+                      </Paper>
                     </motion.div>
                   ))}
-                </List>
+                </Box>
               </Box>
             </motion.div>
           )}
         </AnimatePresence>
       </Box>
+      <GeminiResultsExpanded
+        results={results}
+        isOpen={isResultsOpen}
+        onClose={() => setIsResultsOpen(false)}
+      />
     </LayoutGroup>
-  )
-}
+  );
+};
 
-export default GeminiResults
-
+export default GeminiResults;

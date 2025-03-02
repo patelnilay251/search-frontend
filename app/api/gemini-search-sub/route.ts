@@ -85,18 +85,74 @@ interface PostResponseBody {
     conversationId: string;
 }
 
-
 const customsearch = google.customsearch('v1');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+
+async function decomposeQuery(query: string): Promise<string[]> {
+    const decompositionPrompt = `Decompose the following complex query into a list of clear, concise sub-queries for a multi-step search process. Return ONLY a JSON array of strings.
+    
+Query: "${query}"`;
+
+    try {
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const result: GenerationResponse = await model.generateContent(decompositionPrompt);
+        let decompositionText = result.response.text();
+
+        decompositionText = decompositionText.replace(/```json\s*|\s*```/g, '').trim();
+        const subQueries = JSON.parse(decompositionText);
+
+        if (Array.isArray(subQueries)) {
+            return subQueries.map(q => typeof q === 'string' ? q : q.query || String(q));
+        } else {
+            return [query];
+        }
+    } catch (error) {
+        console.error("!! Error during query decomposition:", error);
+        return [query];
+    }
+}
+
+
+async function performSubQuerySearch(subQuery: string): Promise<GoogleSearchItem[]> {
+
+    try {
+        const response = await customsearch.cse.list({
+            auth: process.env.GOOGLE_API_KEY,
+            cx: process.env.GOOGLE_SEARCH_ENGINE_ID,
+            q: subQuery,
+            num: 5,
+        });
+        const items = (response.data.items ?? []) as GoogleSearchItem[];
+
+        return items;
+    } catch (error) {
+        console.error("!! Error during sub-query search for:", subQuery, error);
+        return [];
+    }
+}
+
+async function getAggregatedSearchResults(query: string): Promise<SearchResult[]> {
+
+    const subQueries = await decomposeQuery(query);
+
+    const resultsArrays = await Promise.all(subQueries.map(sq => performSubQuerySearch(sq)));
+    const aggregatedItems = resultsArrays.flat();
+    const formattedResults: SearchResult[] = aggregatedItems.map(item => ({
+        title: item.title || 'No title available',
+        snippet: item.snippet || 'No snippet available',
+        url: item.link || '',
+        source: item.link ? new URL(item.link).hostname.replace('www.', '') : 'unknown'
+    }));
+    return formattedResults;
+}
 
 async function getRelevantSearchResults(
     query: string,
     summaryData: SummaryData,
     conversationContext: string
 ): Promise<GetRelevantSearchResultsReturn> {
-    try {
 
-        const combinedPrompt = `Analyze the following query and provide both search optimization and visualization needs.
+    const combinedPrompt = `Analyze the following query and provide both search optimization and visualization needs.
 
         Query: "${query}"
         Context: "${summaryData.overview}"
@@ -110,8 +166,8 @@ async function getRelevantSearchResults(
                 "entities": ["use stock symbol for companies, full name for locations"],
                 "confidence": 0-1 score,
                 "details": {
-                    "stockSymbol": "AAPL",  // Include only for financial type
-                    "location": "Paris"      // Include for geographic and weather type
+                    "stockSymbol": "AAPL",
+                    "location": "Paris"
                 }
             }
         }
@@ -150,17 +206,16 @@ async function getRelevantSearchResults(
             }
         }`;
 
+    try {
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const result: GenerationResponse = await model.generateContent(combinedPrompt);
         const analysisText = result.response.text().trim();
 
-
-        const cleanedText = analysisText.replace(/```json\n?/, '').replace(/```/, '').trim();
+        const cleanedText = analysisText.replace(/```json\s*\n?/, '').replace(/```/, '').trim();
         const parsedResult: EnrichedResult = JSON.parse(cleanedText);
 
 
         const visualizationData: Visualization = parsedResult.visualization;
-
 
         let additionalData: unknown | null = null;
         if (visualizationData && visualizationData.confidence > 0.7) {
@@ -171,38 +226,39 @@ async function getRelevantSearchResults(
             } else if (visualizationData.type === 'weather' && visualizationData.details?.location) {
                 additionalData = await fetchWeatherData(visualizationData.details.location);
             }
+
+        } else {
+            console.log("===== [Enrichment] No Additional Visualization Data Fetched");
         }
-        console.log('🔎 Starting search for query:', parsedResult.enrichedQuery);
 
-        const searchResponse = await customsearch.cse.list({
-            auth: process.env.GOOGLE_API_KEY,
-            cx: process.env.GOOGLE_SEARCH_ENGINE_ID,
-            q: parsedResult.enrichedQuery,
-            num: 8,
-            sort: 'date:r:20'
-        });
 
-        const items = (searchResponse.data.items ?? []) as GoogleSearchItem[];
-        const formattedResults: SearchResult[] = items.map((result) => ({
-            title: result.title ?? 'No title available',
-            snippet: result.snippet ?? 'No snippet available',
-            url: result.link ?? '',
-            source: result.link ? new URL(result.link).hostname.replace('www.', '') : 'unknown'
-        }));
+        const aggregatedResults = await getAggregatedSearchResults(parsedResult.enrichedQuery);
+
 
         return {
-            results: formattedResults,
+            results: aggregatedResults,
             visualizationData: additionalData
         };
     } catch (error: unknown) {
-        console.error('Search results error:', error);
+        console.error('!! [Enrichment] Search results error:', error);
         return { results: [], visualizationData: null };
     }
 }
 
+function getCorsHeaders(): { [header: string]: string } {
+    return {
+        'Access-Control-Allow-Origin': 'http://localhost:3001',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Credentials': 'true'
+    };
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse<PostResponseBody | { error: string }>> {
+
     try {
         const body = (await req.json()) as PostRequestBody;
+
         const { message, conversationId, summaryData, previousMessages = [] } = body;
 
         const conversationContext = previousMessages
@@ -210,17 +266,20 @@ export async function POST(req: NextRequest): Promise<NextResponse<PostResponseB
             .map((msg: Message) => `${msg.type}: ${msg.content}`)
             .join('\n');
 
+
+
         const { results: searchResults, visualizationData } = await getRelevantSearchResults(
             message,
             summaryData,
             conversationContext
         );
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
         const searchContext = searchResults
             .map((result, index) => `[${index + 1}] ${result.source}: ${result.title}\n${result.snippet}`)
             .join('\n\n');
+
 
         const systemPrompt = `You are an AI assistant providing detailed, accurate responses. ALWAYS RESPOND WITH VALID JSON FORMAT:
 
@@ -247,24 +306,24 @@ export async function POST(req: NextRequest): Promise<NextResponse<PostResponseB
         ${visualizationData ? `VISUALIZATION DATA: ${JSON.stringify(visualizationData)}` : ''}
 
         RESPONSE RULES:
-        1. Use citations from search results , to form well detailed answer of 300 - 400 words 
+        1. Use citations from search results , to form well detailed answer of  One line,One para,100-200 words , 300 - 400 words ,Depeding upon the context and query
         2. Maintain conversation context
         3. Always valid JSON format
         4. If visualization data is provided, explain its relevance in visualizationContext
-        5. If the search results are insufficient or not relevant, 
-        integrate both the provided search results and 
-        your internal training data to generate the best possible result.`;
+        `;
+
 
         const genResult: GenerationResponse = await model.generateContent(systemPrompt);
         const responseText = genResult.response.text();
 
-        let structuredResponse: { response: string; citations?: Citation[]; visualizationContext?: unknown };
 
+        let structuredResponse: { response: string; citations?: Citation[]; visualizationContext?: unknown };
         try {
-            const cleanedResponse = responseText.replace(/```json/g, '').replace(/```/g, '');
+            const cleanedResponse = responseText.replace(/```json\s*|\s*```/g, '');
             structuredResponse = JSON.parse(cleanedResponse);
+
         } catch (e) {
-            console.log(e);
+            console.error("!! [POST Handler] Error parsing generated response:", e);
             const citationMatches = [...responseText.matchAll(/\[(\d+)\]/g)];
             const citations: Citation[] = citationMatches
                 .map((match) => {
@@ -279,24 +338,19 @@ export async function POST(req: NextRequest): Promise<NextResponse<PostResponseB
                         : null;
                 })
                 .filter((citation): citation is Citation => citation !== null);
+            structuredResponse = { response: responseText, citations };
 
-            structuredResponse = {
-                response: responseText,
-                citations
-            };
         }
 
         const assistantMessage: AssistantMessage = {
             id: (Date.now() + 1).toString(),
             type: 'assistant',
             content: structuredResponse.response,
-            citations: structuredResponse.citations?.filter((c) => c.number <= searchResults.length),
+            citations: structuredResponse.citations?.filter(c => c.number <= searchResults.length),
             visualizationData: visualizationData,
             visualizationContext: structuredResponse.visualizationContext,
             timestamp: new Date().toISOString()
         };
-
-        //console.log(assistantMessage);
 
         return NextResponse.json(
             {
@@ -306,7 +360,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<PostResponseB
             { headers: getCorsHeaders() }
         );
     } catch (error: unknown) {
-        console.error('Error in POST handler:', error);
+        console.error("!! [POST Handler] Error in POST handler:", error);
         return NextResponse.json(
             { error: 'Failed to process chat message' },
             { status: 500, headers: getCorsHeaders() }
@@ -323,13 +377,4 @@ export async function OPTIONS(): Promise<NextResponse<null>> {
             'Access-Control-Allow-Credentials': 'true'
         }
     });
-}
-
-function getCorsHeaders(): { [header: string]: string } {
-    return {
-        'Access-Control-Allow-Origin': 'http://localhost:3001',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Credentials': 'true'
-    };
 }
