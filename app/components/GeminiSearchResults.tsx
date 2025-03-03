@@ -23,7 +23,6 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import QueryConveyor from './QueryConveyor'
 import { useRouter } from 'next/navigation'
 import { useConversationStore } from '../store/conversationStore'
-import { v4 as uuidv4 } from 'uuid'
 import AnalyticsDashboard from './AnalyticsDashboard'
 import GeminiResultsExpanded from './GeminiResultsExpanded'
 import SearchStreamingInterface from './SearchStreamingInterface'
@@ -123,6 +122,7 @@ interface CompleteData {
   searchResults: ProcessedResult[];
   summaryData: string;
   originalQuery: string;
+  conversationId?: string;
 }
 
 type StreamUpdate =
@@ -155,7 +155,7 @@ export default function GeminiSearchResults() {
   const [finalizing, setFinalizing] = useState(false)
 
   const router = useRouter()
-  const { setConversationSummaryData, setConversationId } = useConversationStore()
+  const { setConversationSummaryData, setConversationId, conversationId } = useConversationStore()
 
   useEffect(() => {
     setMounted(true)
@@ -249,44 +249,34 @@ export default function GeminiSearchResults() {
       case 'processing':
         setCurrentStep(update.data.step)
         setStepMessage(update.data.message)
+        if (update.data.step === 'search') {
+          setFinalizing(false)
+        }
         break
-
       case 'decomposition':
         setDecomposedQueries(update.data.subQueries)
         break
-
       case 'search':
-        // Update search progress
-        setSearchProgress(update.data.progress)
-
-        // Add new results to existing partial results
-        setPartialResults(prev => {
-          // Combine existing results with new ones, avoiding duplicates
-          const newResults = [...prev]
-          update.data.results.forEach((result: Result) => {
-            if (!newResults.some(r => r.url === result.url)) {
-              newResults.push(result)
-            }
-          })
-          // Sort by score
-          return newResults.sort((a, b) => b.score - a.score)
+        setSearchProgress({
+          total: update.data.progress.total,
+          current: update.data.progress.current,
         })
+        setPartialResults((prev) => [...prev, ...update.data.results])
         break
-
       case 'complete':
+        setResults(update.data.searchResults)
         setFinalizing(false)
-
-        // Parse summary data if needed
-        const summaryDataParsed = typeof update.data.summaryData === 'string'
-          ? JSON.parse(update.data.summaryData)
-          : update.data.summaryData
-
-        setSummaryData(summaryDataParsed)
-        setResults(update.data.searchResults || [])
+        setLoading(false)
+        setSummaryData(JSON.parse(update.data.summaryData))
+        // Store the conversation data
+        if (update.data.conversationId) {
+          // If we received a conversation ID from the API, use it
+          setConversationId(update.data.conversationId)
+        }
+        setConversationSummaryData(JSON.parse(update.data.summaryData))
         break
-
       default:
-        console.log('Unknown update type:')
+        break
     }
   }
 
@@ -299,10 +289,8 @@ export default function GeminiSearchResults() {
   }
 
   const handleChatClick = () => {
-    if (summaryData) {
-      const conversationId = uuidv4()
-      setConversationId(conversationId)
-      setConversationSummaryData(summaryData)
+    if (summaryData && conversationId) {
+      // We now have a valid conversation ID from the API
       router.push(`/conversation/${conversationId}`)
     }
   }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { v4 as uuidv4 } from 'uuid';
+import { createConversation, saveSearchResults, supabase } from '@/app/lib/supabase';
 
 interface SearchRequest {
     query: string;
@@ -69,6 +71,7 @@ interface CompleteData {
     searchResults: ProcessedResult[];
     summaryData: string;
     originalQuery: string;
+    conversationId?: string;
 }
 
 type StreamUpdate =
@@ -210,6 +213,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         const { query } = (await req.json()) as SearchRequest;
         console.log('📝 Received query:', query);
 
+        // Create a conversation ID for this search
+        const conversationId = uuidv4();
+
         // Create a new ReadableStream for sending incremental updates
         const stream = new ReadableStream({
             async start(controller) {
@@ -236,6 +242,19 @@ export async function POST(req: NextRequest): Promise<Response> {
                         type: 'decomposition',
                         data: { subQueries }
                     });
+
+                    // Create the conversation in the database with initial data
+                    try {
+                        await createConversation({
+                            id: conversationId,
+                            user_id: 'anonymous', // We'll update this with actual user IDs when auth is set up
+                            query,
+                            summary: '' // This will be updated once we have the final summary
+                        });
+                    } catch (err) {
+                        console.error('Error creating conversation in database:', err);
+                        // Continue with the search anyway
+                    }
 
                     // Step 2: Perform searches for each sub-query
                     sendUpdate({
@@ -266,38 +285,25 @@ export async function POST(req: NextRequest): Promise<Response> {
                             const publishedDate = extractDate(result);
                             const source = extractDomain(result.link);
                             const tempResult: ProcessedResult = { title, text, url, publishedDate, source, score: 0 };
-                            return {
-                                title,
-                                text,
-                                url,
-                                publishedDate,
-                                source,
-                                score: calculateRelevanceScore(tempResult, query)
-                            };
+                            // Calculate relevance score for this result relative to the query
+                            tempResult.score = calculateRelevanceScore(tempResult, query);
+                            return tempResult;
                         });
 
+                        // Send partial results
                         sendUpdate({
                             type: 'search',
                             data: {
                                 subQuery,
                                 results: partialProcessedResults,
-                                progress: {
-                                    current: i + 1,
-                                    total: subQueries.length
-                                }
+                                progress: { current: i + 1, total: subQueries.length }
                             }
                         });
                     }
 
-                    // Step 3: Process all results together
-                    sendUpdate({
-                        type: 'processing',
-                        data: { step: 'analysis', message: 'Analyzing and summarizing results...' }
-                    });
-
-                    console.log('🔍 Completed intermediate searches for all sub-queries');
                     console.log('📊 Total aggregated results:', allResults.length);
 
+                    // Process all results together
                     const processedResults: ProcessedResult[] = allResults.map((result): ProcessedResult => {
                         const title = result.title;
                         const text = cleanText(result.snippet);
@@ -305,90 +311,114 @@ export async function POST(req: NextRequest): Promise<Response> {
                         const publishedDate = extractDate(result);
                         const source = extractDomain(result.link);
                         const tempResult: ProcessedResult = { title, text, url, publishedDate, source, score: 0 };
-                        return {
-                            title,
-                            text,
-                            url,
-                            publishedDate,
-                            source,
-                            score: calculateRelevanceScore(tempResult, query)
-                        };
+                        // Calculate relevance score for this result relative to the query
+                        tempResult.score = calculateRelevanceScore(tempResult, query);
+                        return tempResult;
                     });
 
-                    console.log('✨ Processed and filtered results:', processedResults.length);
-
-                    // Step 4: Generate summary with Gemini
-                    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-                    const systemPrompt = `You are a highly intelligent assistant generating comprehensive summaries from search results using a multi-step reasoning process.
-
-                    Your response must be a valid JSON object with the following structure:
-                    {
-                        "overview": "Use citations from search results to form a well-detailed answer of 300 - 400 words while maintaining clarity and completeness. 
-                        Do not use * character in output.Don't reveal what is happeing internally or resoning just make overview of results and nothing else",
-                        "keyFindings": [
-                            {
-                                "title": "string - brief title for the finding",
-                                "description": "string - detailed explanation"
-                            }
-                        ],
-                        "conclusion": "string containing final context/summary of length one paragraph",
-                        "metadata": {
-                            "sourcesUsed": number,
-                            "timeframe": "string - date range of sources",
-                            "queryContext": "string - search query"
+                    // Deduplicate results based on URL
+                    const deduplicatedResults: ProcessedResult[] = [];
+                    const urls = new Set<string>();
+                    for (const result of processedResults) {
+                        if (!urls.has(result.url)) {
+                            urls.add(result.url);
+                            deduplicatedResults.push(result);
                         }
                     }
 
-                    Context:
-                    - Original Query: "${query}"
-                    - Decomposed Sub-Queries: ${subQueries.join('; ')}
-                    - Time: ${new Date().toISOString()}
-                    - Number of intermediate sources: ${processedResults.length}
+                    console.log('✨ Processed and filtered results:', processedResults.length);
 
-                    Intermediate Search Results:
-                    ${processedResults
-                            .map((result, index) => {
-                                const date = new Date(result.publishedDate).toLocaleDateString();
-                                return `${index + 1}. [${date}] [${result.source}]
-                    Title: ${result.title}
-                    Content: ${result.text}`;
-                            })
-                            .join('\n\n')}
+                    // Save search results to database
+                    try {
+                        const searchResultsToSave = deduplicatedResults.map(result => ({
+                            conversation_id: conversationId,
+                            title: result.title,
+                            text: result.text,
+                            url: result.url,
+                            published_date: result.publishedDate,
+                            source: result.source,
+                            score: result.score
+                        }));
 
-                    Instructions:
+                        await saveSearchResults(searchResultsToSave);
+                    } catch (err) {
+                        console.error('Error saving search results to database:', err);
+                        // Continue anyway
+                    }
+
+                    // Step 3: Generate Summary
+                    sendUpdate({
+                        type: 'processing',
+                        data: { step: 'analysis', message: 'Analyzing results and generating summary...' }
+                    });
+
+                    const topResults = deduplicatedResults
+                        .sort((a, b) => b.score - a.score)
+                        .slice(0, 15);
+
+                    const summaryPrompt = `
+                    Generate a comprehensive summary of the following search results for the query: "${query}"
                     
-                    3. Combine the findings from all sub-queries into a coherent final answer.
-                    4. Ensure the final conclusion 100-200 words reflects the reasoning process without revealing internal chain-of-thought details.
-                    1. Overview should focus on most recent and relevant information, without revealing internal chain of thought deatils 
-                    2. Include 3-4 key findings supported by sources , key findings should be 100-200 words each
-                    3. All information must be directly supported by sources and present the information impartially without bias or opinion
-                    4. Maintain objectivity and clarity
-                    6. Do not deviate from the JSON structure
-                    7. Ensure response is always parseable JSON
+                    Present the summary in JSON format with the following structure:
+                    {
+                      "overview": "A concise overview of the main findings and themes across all results",
+                      "keyFindings": [
+                        {
+                          "title": "Short title for the finding",
+                          "description": "Detailed description of the key finding"
+                        },
+                        ...
+                      ],
+                      "conclusion": "A brief conclusion summarizing the answer to the query",
+                      "metadata": {
+                        "sourcesUsed": Number of sources referenced,
+                        "timeframe": "Relevant timeframe of the information",
+                        "queryContext": "Brief context about the query domain"
+                      }
+                    }
+                    
+                    Search Results:
+                    ${topResults.map((result, i) => `
+                    [${i + 1}] ${result.title}
+                    URL: ${result.url}
+                    Date: ${result.publishedDate}
+                    ${result.text}
+                    `).join('\n')}
+                    `;
 
-                    Remember: Response must be valid JSON with no additional text or formatting outside the JSON structure.`;
+                    console.log('🤖 Generating summary with Gemini...');
+                    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+                    const summaryResult = await model.generateContent(summaryPrompt);
+                    let summaryText = summaryResult.response.text();
+                    summaryText = summaryText.replace(/```json\s*|\s*```/g, '').trim();
 
-                    const generationResult: GenerationResponse = await model.generateContent(systemPrompt);
-                    let summaryData = generationResult.response.text();
-                    console.log('🤖 Generated summary data successfully');
+                    // Update conversation summary in database after generating summary
+                    try {
+                        await supabase
+                            .from('conversations')
+                            .update({ summary: summaryText })
+                            .eq('id', conversationId);
+                    } catch (err) {
+                        console.error('Error updating conversation summary in database:', err);
+                    }
 
-                    summaryData = summaryData.replace(/```json\s*|\s*```/g, '').trim();
-
-                    // Send the final complete response
+                    // Send the final complete response with the conversation ID
                     sendUpdate({
                         type: 'complete',
                         data: {
-                            searchResults: processedResults,
-                            summaryData,
+                            searchResults: deduplicatedResults,
+                            summaryData: summaryText,
                             originalQuery: query,
+                            conversationId: conversationId
                         }
                     });
 
-                    // Close the stream
-                    controller.close();
+                    console.log('✅ Search and summary complete!');
                 } catch (error) {
-                    console.error('Stream error:', error);
+                    console.error("Stream processing error:", error);
                     controller.error(error);
+                } finally {
+                    controller.close();
                 }
             }
         });
@@ -403,21 +433,8 @@ export async function POST(req: NextRequest): Promise<Response> {
                 'Access-Control-Allow-Credentials': 'true',
             },
         });
-    } catch (error: unknown) {
-        console.error('❌ Error in API:', error);
-        console.log('🔍 Error details:', {
-            name: error instanceof Error ? error.name : 'Unknown',
-            message: error instanceof Error ? error.message : String(error)
-        });
-        return new Response(JSON.stringify({ error: 'Failed to fetch or process results' }), {
-            status: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': 'http://localhost:3000',
-                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                'Access-Control-Allow-Credentials': 'true',
-            },
-        });
+    } catch (error) {
+        console.error("Error processing search request:", error);
+        return NextResponse.json({ error: "An error occurred while processing your request" }, { status: 500 });
     }
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useConversationStore } from '../../store/conversationStore'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -17,62 +17,7 @@ import SendIcon from '@mui/icons-material/Send'
 import GeographicVisualization from '@/app/components/OutputTypes/GeographicVisualization'
 import FinancialVisualization from '@/app/components/OutputTypes/FinancialVisualization'
 import WeatherVisualization from '@/app/components/OutputTypes/WeatherVisualization'
-//import { relative } from 'path'
-
-// Add this mock data after the imports
-// const MOCK_ASSISTANT_RESPONSES: APIMessage[] = [
-//   {
-//     id: '1',
-//     type: 'assistant',
-//     content: "Based on the research data, there are several key developments in renewable energy technology [1]. Solar panel efficiency has improved by 30% in the last decade [2], and wind turbine capacity has doubled [3]. The most significant breakthrough has been in energy storage solutions, with new battery technologies showing promising results [4].",
-//     citations: [
-//       {
-//         number: 1,
-//         source: "Renewable Energy Journal",
-//         url: "renewable-energy-journal.com/article-2024"
-//       },
-//       {
-//         number: 2,
-//         source: "Solar Tech Review",
-//         url: "solartechreview.org/efficiency-study"
-//       },
-//       {
-//         number: 3,
-//         source: "Wind Power Monthly",
-//         url: "windpowermonthly.com/capacity-report"
-//       },
-//       {
-//         number: 4,
-//         source: "Energy Storage News",
-//         url: "energystorage.news/battery-breakthrough"
-//       }
-//     ],
-//     timestamp: new Date().toISOString()
-//   },
-//   {
-//     id: '2',
-//     type: 'assistant',
-//     content: "Investment in renewable energy reached $500 billion globally in 2023 [1]. The most significant growth was seen in solar and wind sectors, with emerging markets leading the expansion [2]. However, challenges remain in grid integration and storage capacity [3].",
-//     citations: [
-//       {
-//         number: 1,
-//         source: "Global Energy Report",
-//         url: "globalenergyreport.org/2023"
-//       },
-//       {
-//         number: 2,
-//         source: "Emerging Markets Review",
-//         url: "emreview.com/renewable-growth"
-//       },
-//       {
-//         number: 3,
-//         source: "Power Systems Journal",
-//         url: "powersystems.org/challenges"
-//       }
-//     ],
-//     timestamp: new Date().toISOString()
-//   }
-// ];
+import { getConversation } from '@/app/lib/supabase'
 
 interface GeographicData {
   coordinates: {
@@ -182,20 +127,6 @@ interface Message {
   type: 'user' | 'assistant'
   content: string
   citations?: Citation[]
-  visualizationData?: VisualizationData
-  visualizationContext?: VisualizationContext
-  timestamp: string
-}
-
-interface APIMessage {
-  id: string
-  type: 'user' | 'assistant'
-  content: string
-  citations?: {
-    number: number
-    source: string
-    url: string
-  }[]
   visualizationData?: VisualizationData
   visualizationContext?: VisualizationContext
   timestamp: string
@@ -331,103 +262,108 @@ const MessageContent = ({ message }: { message: Message }) => {
 };
 
 export default function ConversationPage() {
-
-  const router = useRouter()
-  const params = useParams()
-  const { summaryData, conversationId } = useConversationStore()
-  const [message, setMessage] = useState('')
-  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { id } = useParams<{ id: string }>()
+  const {
+    summaryData,
+    setConversationSummaryData,
+    setConversationId,
+    messages: storeMessages,
+    fetchMessages,
+    addMessageToConversation,
+  } = useConversationStore()
 
-  const messagesEndRef = useRef<null | HTMLDivElement>(null)
-  const id = params?.id as string
+  // Use this to track if we have loaded the conversation data yet
+  const [isInitialized, setIsInitialized] = useState(false)
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
-
+  // Load conversation and messages data
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    if (!id) return
 
-  useEffect(() => {
-    if (!summaryData || !id || conversationId !== id) {
-      router.replace('/')
+    const loadConversation = async () => {
+      try {
+        setIsLoading(true)
+
+        // Fetch conversation details
+        const conversation = await getConversation(id as string)
+
+        // Update the store with the conversation data
+        setConversationId(conversation.id)
+
+        try {
+          // Try to parse the summary data from the conversation
+          const summaryDataObj = JSON.parse(conversation.summary)
+          setConversationSummaryData(summaryDataObj)
+        } catch (e) {
+          // If it's not valid JSON, just use it as is
+          console.error('Error parsing summary data:', e)
+        }
+
+        // Fetch messages for this conversation
+        await fetchMessages(id as string)
+
+        setIsInitialized(true)
+      } catch (error) {
+        console.error('Error loading conversation:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [summaryData, conversationId, id, router])
+
+    loadConversation()
+  }, [id, setConversationId, setConversationSummaryData, fetchMessages])
 
   const handleSend = async () => {
-    if (!message.trim()) return
+    if (!input.trim() || isLoading || !id) return
 
-    const newUserMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: message,
-      timestamp: new Date().toISOString()
-    }
-
-    setMessages(prev => [...prev, newUserMessage])
-    setMessage('')
+    const userInput = input.trim()
+    setInput('')
     setIsLoading(true)
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
     try {
-      const response = await fetch('/api/gemini-search-sub', {
+      // Add user message to the conversation
+      await addMessageToConversation(
+        userInput,
+        'user',
+        id as string
+      )
+
+      // Make API call to get assistant response
+      const response = await fetch(`/api/conversation/${id}`, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          message,
+          message: userInput,
           conversationId: id,
           summaryData,
-          previousMessages: messages.slice(-3)
+          previousMessages: storeMessages.slice(-3), // Send last 3 messages for context
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to send message')
-
-      const data: { messages: APIMessage[] } = await response.json()
-      if (data.messages?.length) {
-        setMessages(prev => [
-          ...prev,
-          ...data.messages.map((msg: APIMessage) => ({
-            ...msg,
-            citations: msg.citations?.map((c) => ({
-              ...c,
-              url: c.url.startsWith('http') ? c.url : `https://${c.url}`
-            }))
-          }))
-        ])
+      if (!response.ok) {
+        throw new Error('Failed to get response')
       }
+
+      const responseData = await response.json()
+
+      // Add assistant message to the conversation
+      await addMessageToConversation(
+        responseData.answer,
+        'assistant',
+        id as string,
+        responseData.citations || [],
+        responseData.visualizationData || null,
+        responseData.visualizationContext || null
+      )
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error sending message:', error)
     } finally {
       setIsLoading(false)
-      // try {
-      //   // Use mock data instead of API call
-      //   const mockResponse = {
-      //     messages: [
-      //       MOCK_ASSISTANT_RESPONSES[Math.floor(Math.random() * MOCK_ASSISTANT_RESPONSES.length)]
-      //     ]
-      //   };
-
-      //   setMessages(prev => [
-      //     ...prev,
-      //     ...mockResponse.messages.map((msg: APIMessage) => ({
-      //       ...msg,
-      //       citations: msg.citations?.map((c) => ({
-      //         ...c,
-      //         url: c.url.startsWith('http') ? c.url : `https://${c.url}`
-      //       }))
-      //     }))
-      //   ]);
-      // } catch (error) {
-      //   console.error('Error:', error);
-      // } finally {
-      //   setIsLoading(false);
-
+      setTimeout(scrollToBottom, 100)
     }
   }
 
@@ -438,196 +374,226 @@ export default function ConversationPage() {
     }
   }
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
   if (!summaryData || !id) return null
 
   return (
-    <Box
+    <Container
+      component={motion.div}
+      maxWidth="lg"
       sx={{
-        position: 'fixed',
-        top: 0,
-        left: { xs: '60px', sm: '240px' },
-        right: 0,
-        bottom: 0,
-        border: 'none',
-        overflow: 'hidden'
+        py: 4,
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: '#000000',
       }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
     >
-      <Box sx={{ height: '100%', overflow: 'auto' }}>
-        <Container
-          maxWidth="lg"
-          sx={{
-            py: 4,
-            minHeight: '100vh',
-            px: { xs: 2, sm: 3 },
-            pb: { xs: '100px', sm: '120px' }  // Add bottom padding to prevent content from being hidden
-          }}
-        >
-          <Box sx={{ maxWidth: '800px' }}>  {/* Removed mx: 'auto' */}
-            <Box sx={{ mb: 4 }}>
-              {/* <Typography variant="h6" component="h1" gutterBottom sx={{
-                color: 'white', fontSize: '0.5rem',
-                lineHeight: 1.5
-              }}>
-                {summaryData?.overview}
-              </Typography> */}
-              <Box sx={{ position: 'relative' }}>
-                <AnimatePresence initial={false}>
-                  <motion.div
-                    initial={{ height: 'auto' }}
-                    animate={{
-                      height: isExpanded ?
-                        'auto' : '4.5em'
-                    }}
-                    transition={{
-                      duration: 0.3,
-                      //ease:'easeInOut'
-                    }}
-                    style={{
-                      overflow: 'hidden',
-                    }}>
-                    <Typography
-                      variant="h6"
-                      component="h1"
-                      gutterBottom
-                      sx={{
-                        color: 'white',
-                        fontSize: '0.875rem',
-                        lineHeight: 1.5
-                      }} >
-                      {summaryData?.overview}
-                    </Typography>
-                  </motion.div>
-                </AnimatePresence>
-                {summaryData.overview.length > 400 && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      background: isExpanded ?
-                        'none' : 'linear-gradient(transparent,rgba(0,0,0,0.8))',
-                      pt: 3,
-                      pb: 1,
-                      display: 'flex',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <Typography
+      {/* Message Thread */}
+      <Box sx={{ flex: 1, mb: 4, overflow: 'hidden' }}>
+        <AnimatePresence>
+          {isInitialized && storeMessages.length === 0 && summaryData && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              style={{ marginBottom: '2rem' }}
+            >
+              <Box
+                sx={{
+                  p: 3,
+                  borderRadius: 2,
+                  background: 'rgba(30, 30, 30, 0.6)',
+                  backdropFilter: 'blur(10px)',
+                  mb: 3
+                }}
+              >
+                <Typography variant="h5" sx={{ mb: 2, color: '#FFFFFF' }}>
+                  Summary
+                </Typography>
+                <Typography variant="body1" sx={{ mb: 2, color: '#CCCCCC' }}>
+                  {summaryData.overview}
+                </Typography>
 
-                      onClick={() => setIsExpanded(!isExpanded)}
-                      sx={{
-                        color: 'primary.main',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                        '&:hover': {
-                          textDecoration: 'underline'
-                        },
-                      }}
-                    >
-                      {isExpanded ? 'Show Less' : 'Read more'}
+                {summaryData.keyFindings?.length > 0 && (
+                  <>
+                    <Typography variant="h6" sx={{ mt: 3, mb: 1, color: '#FFFFFF' }}>
+                      Key Findings
                     </Typography>
-                  </Box>
+                    {summaryData.keyFindings.map((finding, index) => (
+                      <Box key={index} sx={{ mb: 2 }}>
+                        <Typography variant="subtitle1" sx={{ color: '#FFFFFF' }}>
+                          {finding.title}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#AAAAAA' }}>
+                          {finding.description}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </>
+                )}
+
+                {summaryData.conclusion && (
+                  <>
+                    <Typography variant="h6" sx={{ mt: 3, mb: 1, color: '#FFFFFF' }}>
+                      Conclusion
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#AAAAAA' }}>
+                      {summaryData.conclusion}
+                    </Typography>
+                  </>
                 )}
               </Box>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            </Box>
+        <AnimatePresence>
+          {storeMessages.map((message) => (
+            <motion.div
+              key={message.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <MessageContent message={message} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
-            <Box>
-              {messages.map((item, index) => (
-                <Box
-                  key={item.id}
-                  sx={{
-                    borderBottom: index !== messages.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'
-                  }}
-                >
-                  <MessageContent message={item} />
-                </Box>
-              ))}
-              {isLoading && (
-                <Box sx={{ py: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {[0, 1, 2].map((i) => (
-                      <motion.div
-                        key={i}
-                        animate={{
-                          scale: [1, 1.2, 1],
-                          opacity: [0.5, 1, 0.5]
-                        }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                          delay: i * 0.2
-                        }}
-                        style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          backgroundColor: '#fff'
-                        }}
-                      />
-                    ))}
-                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', ml: 1 }}>
-                      Searching...
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
-              <div ref={messagesEndRef} />
-            </Box>
-
-            <Box sx={{
-              position: 'fixed',
-              bottom: { xs: 10, sm: 20 },
-              left: { xs: 'calc(60px + 16px)', sm: 'calc(240px + 24px)' },
-              right: { xs: '16px', sm: '24px' },
-              maxWidth: '800px',
-              width: 'calc(100% - 32px)',
-              zIndex: 10
-            }}>
-              <TextField
-                fullWidth
-                variant="outlined"
-                placeholder="Ask a follow-up question..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                multiline
-                maxRows={4}
-                disabled={isLoading}
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <Box sx={{ display: 'flex', my: 2, mx: 2 }}>
+              <Box
                 sx={{
-                  bgcolor: 'rgba(0, 0, 0, 0.6)',
-                  backdropFilter: 'blur(10px)',
-                  '& .MuiOutlinedInput-root': {
-                    color: 'white',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.23)' },
-                    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
-                    '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: 'grey.500',
+                  mx: 0.5,
+                  animation: 'pulse 1s infinite',
+                  '@keyframes pulse': {
+                    '0%': { opacity: 0.2 },
+                    '50%': { opacity: 0.8 },
+                    '100%': { opacity: 0.2 },
                   },
-                  '& .MuiOutlinedInput-input': {
-                    '&::placeholder': { color: 'rgba(255, 255, 255, 0.5)' },
-                  },
+                  animationDelay: '0s',
                 }}
-                InputProps={{
-                  endAdornment: (
-                    <IconButton
-                      onClick={handleSend}
-                      disabled={isLoading || !message.trim()}
-                      sx={{
-                        color: 'primary.main',
-                        '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' }
-                      }}
-                    >
-                      <SendIcon />
-                    </IconButton>
-                  ),
+              />
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: 'grey.500',
+                  mx: 0.5,
+                  animation: 'pulse 1s infinite',
+                  '@keyframes pulse': {
+                    '0%': { opacity: 0.2 },
+                    '50%': { opacity: 0.8 },
+                    '100%': { opacity: 0.2 },
+                  },
+                  animationDelay: '0.3s',
+                }}
+              />
+              <Box
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: 'grey.500',
+                  mx: 0.5,
+                  animation: 'pulse 1s infinite',
+                  '@keyframes pulse': {
+                    '0%': { opacity: 0.2 },
+                    '50%': { opacity: 0.8 },
+                    '100%': { opacity: 0.2 },
+                  },
+                  animationDelay: '0.6s',
                 }}
               />
             </Box>
-          </Box>
-        </Container>
+          </motion.div>
+        )}
+
+        <div ref={messagesEndRef} />
       </Box>
-    </Box>
-  );
+
+      {/* Input Area */}
+      <Box
+        component="form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          handleSend()
+        }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          p: 2,
+          borderRadius: 2,
+          backdropFilter: 'blur(10px)',
+          backgroundColor: 'rgba(30, 30, 30, 0.6)',
+        }}
+      >
+        <TextField
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask a follow-up question..."
+          fullWidth
+          variant="outlined"
+          onKeyDown={handleKeyPress}
+          InputProps={{
+            sx: {
+              pr: 1,
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.main',
+              },
+              color: 'white',
+            },
+          }}
+        />
+        <IconButton
+          type="submit"
+          color="primary"
+          aria-label="send"
+          disabled={isLoading || !input.trim()}
+          sx={{
+            backgroundColor: 'primary.main',
+            color: '#fff',
+            width: 40,
+            height: 40,
+            ml: 1,
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            },
+            '&.Mui-disabled': {
+              backgroundColor: 'rgba(255, 255, 255, 0.12)',
+              color: 'rgba(255, 255, 255, 0.3)',
+            },
+          }}
+        >
+          <SendIcon />
+        </IconButton>
+      </Box>
+    </Container>
+  )
 }
